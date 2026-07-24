@@ -43,11 +43,32 @@ input,select{background:#fff;border:1px solid var(--border);border-radius:8px;pa
 input:focus,select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.12);}
 input::placeholder{color:#B2BAC9;}
 .badge-num{width:22px;height:22px;border-radius:999px;background:var(--red);color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;}
-.suggest{position:absolute;z-index:30;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 28px rgba(20,30,60,.12);width:220px;overflow:hidden;}
-.suggest div{padding:8px 12px;font-size:12.5px;cursor:pointer;}
-.suggest div:hover{background:#F2F6FF;color:var(--blue);}
+/* ── Suggest dropdown ── */
+.suggest{position:fixed;z-index:9999;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 28px rgba(20,30,60,.12);min-width:260px;max-width:380px;overflow:hidden;max-height:220px;overflow-y:auto;}
+.suggest-item{padding:8px 12px;font-size:12.5px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.suggest-item:hover{background:#F2F6FF;color:var(--blue);}
+.suggest-item .s-main{font-weight:600;font-size:12px;}
+.suggest-item .s-sub{font-size:10.5px;color:#8A93A6;}
+.suggest-item .s-badge{font-size:9.5px;background:#FEF9E7;color:#92680B;border:1px solid #F5E6A8;border-radius:4px;padding:1px 5px;white-space:nowrap;}
+/* ── Master Data Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(14,23,48,.55);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
+.modal-box{background:#fff;border-radius:18px;box-shadow:0 24px 60px rgba(14,23,48,.25);width:740px;max-width:96vw;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;}
+.modal-header{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-body{padding:16px 22px;overflow-y:auto;flex:1;}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+table.master-tbl{width:100%;border-collapse:collapse;}
+table.master-tbl th{background:#F7F9FD;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#5A6479;padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;}
+table.master-tbl td{padding:8px 10px;font-size:12.5px;border-bottom:1px solid #F0F2F8;}
+table.master-tbl tr:hover td{background:#F8FAFF;}
+.master-row-selected td{background:#EEF5FF !important;outline:2px solid var(--blue);outline-offset:-1px;}
 .step-dot{width:26px;height:26px;border-radius:999px;background:var(--blue);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .progress-track{background:#EDF0F6;border-radius:999px;height:8px;overflow:hidden;}
+/* Loading spinner */
+.spin{animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Toast */
+#toast{position:fixed;bottom:24px;right:24px;z-index:9999;transition:opacity .3s;pointer-events:none;}
+.toast-msg{background:#1E2532;color:#fff;border-radius:10px;padding:10px 18px;font-size:13px;box-shadow:0 8px 24px rgba(14,23,48,.3);margin-top:6px;}
 </style>
 </head>
 <body>
@@ -92,7 +113,7 @@ input::placeholder{color:#B2BAC9;}
       <div class="text-[12px] font-semibold text-white mb-1">Butuh Bantuan?</div>
       <div class="text-[11px] text-slate-400 mb-2">Hubungi Tim Support kami</div>
       <button class="btn btn-blue w-full justify-center text-[11px]"><i data-lucide="headset" class="w-3.5 h-3.5"></i>Hubungi Support</button>
-      <div class="text-[10px] text-slate-500 mt-3">© 2026 Integra Solusi Mandiri<br>v1.0.0</div>
+      <div class="text-[10px] text-slate-500 mt-3">© 2026 Integra Solusi Mandiri<br>v1.1.0</div>
     </div>
   </aside>
 
@@ -107,6 +128,7 @@ input::placeholder{color:#B2BAC9;}
       <div class="flex items-center gap-4">
         <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium" style="background:#F4F6FB;border:1px solid var(--border);"><i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>Juli 2026<i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i></div>
         <button id="btnConnectSheet" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#FEF2E3;color:#92680B;border:1px solid #F5E6A8;"><i data-lucide="plug-zap" class="w-3.5 h-3.5"></i><span id="connStatus">Sambungkan Google Sheets</span></button>
+        <button id="btnMasterDataOpen" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#F2ECFE;color:#6D28D9;border:1px solid #DDD6FE;"><i data-lucide="database" class="w-3.5 h-3.5"></i>Master Data</button>
         <div class="relative"><i data-lucide="bell" class="w-5 h-5 text-slate-500"></i><span class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold">5</span></div>
         <div class="flex items-center gap-2">
           <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Devry" class="w-8 h-8 rounded-full"/>
@@ -125,7 +147,7 @@ input::placeholder{color:#B2BAC9;}
           <div class="grid grid-cols-4 gap-4 mb-5">
             <div class="card p-4 flex items-center gap-3">
               <div class="icon-circle" style="background:#E9F0FE;"><i data-lucide="briefcase" class="w-5 h-5" style="color:var(--blue);"></i></div>
-              <div><div class="text-[11px] text-slate-400">Total Project</div><div class="text-xl font-bold">126</div><div class="text-[10px] text-slate-400">Active Project</div></div>
+              <div><div class="text-[11px] text-slate-400">Total Project</div><div class="text-xl font-bold" id="kpiTotalProject">-</div><div class="text-[10px] text-slate-400">Active Project</div></div>
             </div>
             <div class="card p-4 flex items-center gap-3">
               <div class="icon-circle" style="background:#E7F9EE;"><i data-lucide="calendar-check" class="w-5 h-5" style="color:var(--green);"></i></div>
@@ -145,7 +167,10 @@ input::placeholder{color:#B2BAC9;}
           <div class="card p-4 mb-5">
             <div class="flex items-center justify-between mb-3">
               <div class="text-sm font-bold">Informasi Timesheet</div>
-              <button class="btn btn-outline"><i data-lucide="refresh-cw" class="w-3.5 h-3.5" style="color:var(--purple);"></i>Ganti Bulan</button>
+              <div class="flex items-center gap-2">
+                <button id="btnRefreshSheet" class="btn btn-outline text-[11px]" title="Reload dari Google Sheets"><i data-lucide="refresh-cw" class="w-3.5 h-3.5" style="color:var(--purple);"></i>Reload Sheet</button>
+                <button class="btn btn-outline"><i data-lucide="calendar" class="w-3.5 h-3.5"></i>Ganti Bulan</button>
+              </div>
             </div>
             <div class="grid grid-cols-2 gap-y-2 text-xs">
               <div class="flex gap-2"><span class="text-slate-400 w-32">Consultant Name</span><span class="font-semibold">Devry Rizkie H</span></div>
@@ -162,6 +187,7 @@ input::placeholder{color:#B2BAC9;}
               <div class="flex items-center gap-2">
                 <span class="badge-num">1</span>
                 <span class="text-sm font-bold">Input Timesheet</span>
+                <span id="syncBadge" class="text-[10px] text-slate-400 font-normal"></span>
               </div>
               <div class="flex items-center gap-2 flex-wrap">
                 <button class="btn btn-blue" id="btnTambahBaris"><i data-lucide="plus" class="w-3.5 h-3.5"></i>Tambah Baris</button>
@@ -177,8 +203,13 @@ input::placeholder{color:#B2BAC9;}
               <table class="ts">
                 <thead>
                   <tr>
-                    <th><input type="checkbox" id="chkAll"></th><th>No</th><th>Date</th><th style="min-width:150px;">Project ID *</th><th>Project Name</th><th>Project Phase</th><th>Customer</th>
-                    <th style="min-width:230px;">Activity Description *</th><th style="min-width:120px;">Location *</th><th style="min-width:110px;">Billable Hours *</th><th>Mandays</th><th>Aksi</th>
+                    <th><input type="checkbox" id="chkAll"></th><th>No</th><th>Date</th>
+                    <th style="min-width:170px;">Project ID *</th>
+                    <th>Project Name</th><th>Project Phase</th><th>Customer</th>
+                    <th style="min-width:230px;">Activity Description *</th>
+                    <th style="min-width:120px;">Location *</th>
+                    <th style="min-width:110px;">Billable Hours *</th>
+                    <th>Mandays</th><th>Aksi</th>
                   </tr>
                 </thead>
                 <tbody id="tsBody"></tbody>
@@ -201,10 +232,10 @@ input::placeholder{color:#B2BAC9;}
 
           <!-- BOTTOM EXPLAIN STRIP -->
           <div class="card mt-5 p-4 grid grid-cols-4 gap-4 text-xs" style="background:#FAFBFE;">
-            <div><div class="flex items-center gap-2 font-semibold mb-1"><span class="badge-num" style="background:var(--blue);">1</span>Form Input Timesheet</div><div class="text-slate-500 text-[11px]">Isi timesheet per hari dengan mudah. Auto suggestion Project ID & Activity.</div></div>
+            <div><div class="flex items-center gap-2 font-semibold mb-1"><span class="badge-num" style="background:var(--blue);">1</span>Form Input Timesheet</div><div class="text-slate-500 text-[11px]">Auto suggest Project ID, Activity, Location & Jam. Klik kolom untuk suggestion lengkap.</div></div>
             <div><div class="flex items-center gap-2 font-semibold mb-1"><span class="badge-num" style="background:var(--purple);">2</span>Fitur Pintar</div><div class="text-slate-500 text-[11px]">Copy Yesterday, Repeat, Auto Holiday, WFH, Manual Input, dan lainnya.</div></div>
             <div><div class="flex items-center gap-2 font-semibold mb-1"><span class="badge-num" style="background:var(--amber);">3</span>Alur Approval</div><div class="text-slate-500 text-[11px]">Draft → Submit → Project Manager → Dept Head → Division Head → Approved.</div></div>
-            <div class="rounded-xl p-3" style="background:#E7F9EE;"><div class="flex items-center gap-2 font-semibold mb-1"><i data-lucide="file-spreadsheet" class="w-4 h-4" style="color:var(--green);"></i>Export Hasil</div><div class="text-slate-600 text-[11px]">Export Excel akan menghasilkan file sesuai template timesheet PT Integra.</div></div>
+            <div class="rounded-xl p-3" style="background:#E7F9EE;"><div class="flex items-center gap-2 font-semibold mb-1"><i data-lucide="file-spreadsheet" class="w-4 h-4" style="color:var(--green);"></i>Sync Google Sheets</div><div class="text-slate-600 text-[11px]">Data timesheet disimpan & ditarik dari Google Sheets. Delete di sini = delete di sheet.</div></div>
           </div>
         </div>
 
@@ -227,22 +258,11 @@ input::placeholder{color:#B2BAC9;}
           <div class="rounded-2xl p-4" style="background:#FEF9E7;border:1px solid #F5E6A8;">
             <div class="flex items-center gap-2 text-sm font-bold mb-2" style="color:#92680B;"><i data-lucide="lightbulb" class="w-4 h-4"></i>Tips Cepat</div>
             <ul class="text-[11.5px] space-y-1.5" style="color:#8A6A16;">
-              <li>• Gunakan Copy Yesterday untuk menyalin aktivitas kemarin</li>
-              <li>• Gunakan Repeat untuk mengisi beberapa hari sekaligus</li>
-              <li>• Pilih Project ID dari suggestion atau input manual</li>
+              <li>• Ketik di Project ID — akan muncul suggestion dari master data</li>
+              <li>• Klik <strong>Master Data</strong> di topbar untuk lihat & cari semua project</li>
+              <li>• Delete baris → otomatis hapus dari Google Sheets</li>
               <li>• Simpan draft sebelum submit ke atasan</li>
             </ul>
-          </div>
-
-          <div class="card p-4">
-            <div class="text-sm font-bold mb-3">Shortcut & Bantuan</div>
-            <div class="space-y-3 text-xs">
-              <div class="flex items-start gap-2"><div class="icon-circle w-8 h-8 rounded-lg" style="background:#E9F0FE;"><i data-lucide="copy" class="w-4 h-4" style="color:var(--blue);"></i></div><div><div class="font-semibold">Copy Yesterday</div><div class="text-slate-400 text-[11px]">Salin data hari kemarin</div></div></div>
-              <div class="flex items-start gap-2"><div class="icon-circle w-8 h-8 rounded-lg" style="background:#E7F9EE;"><i data-lucide="repeat" class="w-4 h-4" style="color:var(--green);"></i></div><div><div class="font-semibold">Repeat</div><div class="text-slate-400 text-[11px]">Ulangi untuk beberapa hari</div></div></div>
-              <div class="flex items-start gap-2"><div class="icon-circle w-8 h-8 rounded-lg" style="background:#FEF2E3;"><i data-lucide="clock" class="w-4 h-4" style="color:var(--amber);"></i></div><div><div class="font-semibold">Hari Libur</div><div class="text-slate-400 text-[11px]">Akan otomatis terisi</div></div></div>
-              <div class="flex items-start gap-2"><div class="icon-circle w-8 h-8 rounded-lg" style="background:#F2ECFE;"><i data-lucide="home" class="w-4 h-4" style="color:var(--purple);"></i></div><div><div class="font-semibold">WFH</div><div class="text-slate-400 text-[11px]">Pilih lokasi WFH jika perlu</div></div></div>
-              <div class="flex items-start gap-2"><div class="icon-circle w-8 h-8 rounded-lg" style="background:#FDE8EA;"><i data-lucide="edit-3" class="w-4 h-4" style="color:var(--red);"></i></div><div><div class="font-semibold">Manual Input Project ID</div><div class="text-slate-400 text-[11px]">Input project ID manual</div></div></div>
-            </div>
           </div>
 
           <div class="card p-4">
@@ -272,39 +292,111 @@ input::placeholder{color:#B2BAC9;}
   </div>
 </div>
 
+<!-- ============ MASTER DATA MODAL ============ -->
+<div id="modalMaster" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <div class="font-bold text-base">Master Data Project</div>
+        <div class="text-[11px] text-slate-400 mt-0.5">Cari dan pilih project untuk dimasukkan ke baris timesheet aktif</div>
+      </div>
+      <button id="btnModalClose" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-500"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div class="modal-body">
+      <!-- Search bar -->
+      <div class="flex gap-2 mb-4">
+        <div class="relative flex-1">
+          <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+          <input id="masterSearch" placeholder="Cari Project ID atau Site ID..." style="padding-left:30px;" autocomplete="off">
+        </div>
+        <select id="masterFilterCustomer" style="width:160px;">
+          <option value="">Semua Customer</option>
+        </select>
+        <button id="btnMasterRefresh" class="btn btn-outline text-[11px]"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Refresh</button>
+      </div>
+      <!-- Tab: Project / Site -->
+      <div class="flex gap-1 mb-3">
+        <button class="master-tab-btn btn btn-blue text-[11px]" data-tab="project">Project ID</button>
+        <button class="master-tab-btn btn btn-outline text-[11px]" data-tab="site">Site ID</button>
+      </div>
+      <!-- Table -->
+      <div id="masterTableWrap">
+        <table class="master-tbl">
+          <thead>
+            <tr>
+              <th>Project ID</th>
+              <th>Project Name</th>
+              <th>Phase</th>
+              <th>Customer</th>
+              <th>Site ID</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="masterTBody"></tbody>
+        </table>
+        <div id="masterEmpty" class="text-center py-8 text-slate-400 text-sm hidden">Tidak ada data yang cocok.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span class="text-[11px] text-slate-400 mr-auto" id="masterCount"></span>
+      <button id="btnModalCancel" class="btn btn-outline">Tutup</button>
+      <button id="btnModalSelect" class="btn btn-blue" disabled>Pilih Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
 <script>
 lucide.createIcons();
 
 // ================= GOOGLE SHEETS CONFIG =================
-// Setelah deploy Code.gs sebagai Web App, tempel URL-nya di sini,
-// ATAU klik tombol "Sambungkan Google Sheets" di topbar (tersimpan
-// untuk sesi ini saja).
 let APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx35rOsqXd3Jtp5kys0u-txNLL9vx1kOPQD10pKAAKgtm_wJddqu_3g2cvLbpMsb_mJhg/exec";
 const CONSULTANT_NAME = "Devry Rizkie H";
 const CURRENT_MONTH = "2026-07";
-let usageFrequency = {}; // Project ID -> berapa kali dipakai (untuk Favorite Project)
-let activityHistory = []; // daftar activity unik yang pernah dipakai, terbaru duluan
-let activeRowIdx = null; // baris Activity yang sedang fokus (untuk Riwayat Aktivitas)
+let usageFrequency = {};
+let activityHistory = [];
+let activeRowIdx = null;
 
+// =========================================================
+// TOAST
+// =========================================================
+function showToast(msg, type='info'){
+  const t = document.getElementById('toast');
+  const d = document.createElement('div');
+  d.className = 'toast-msg';
+  if(type==='ok') d.style.background='#15803D';
+  if(type==='err') d.style.background='#DC2626';
+  d.textContent = msg;
+  t.appendChild(d);
+  setTimeout(()=>{ d.style.opacity='0'; setTimeout(()=>d.remove(),300); }, 3000);
+}
+
+// =========================================================
+// CONNECT GOOGLE SHEETS
+// =========================================================
 document.getElementById('btnConnectSheet').addEventListener('click', async ()=>{
-  const url = prompt('Tempel Web App URL dari Google Apps Script (Code.gs) kamu:', APPS_SCRIPT_URL || 'https://script.google.com/macros/s/XXXXXXXX/exec');
+  const url = prompt('Tempel Web App URL dari Google Apps Script (Code.gs) kamu:', APPS_SCRIPT_URL||'');
   if(!url) return;
   APPS_SCRIPT_URL = url.trim();
   document.getElementById('connStatus').textContent = 'Menghubungkan...';
   await loadFromSheets();
 });
 
-// Auto-connect saat halaman dibuka, karena URL sudah di-hardcode di atas.
+document.getElementById('btnRefreshSheet').addEventListener('click', ()=>loadFromSheets());
+
 if(APPS_SCRIPT_URL){
   document.getElementById('connStatus').textContent = 'Menghubungkan...';
   window.addEventListener('DOMContentLoaded', loadFromSheets);
-  // fallback in case DOMContentLoaded already fired by the time this runs
   if(document.readyState !== 'loading') loadFromSheets();
 }
 
 async function loadFromSheets(){
-  if(!APPS_SCRIPT_URL){ return; }
+  if(!APPS_SCRIPT_URL) return;
   const statusEl = document.getElementById('connStatus');
+  const badge = document.getElementById('syncBadge');
+  badge.textContent = '⏳ Memuat dari Sheets...';
   try{
     const [mp, ma, ml, ts] = await Promise.all([
       fetch(`${APPS_SCRIPT_URL}?action=getMasterProject`).then(r=>r.json()),
@@ -315,34 +407,32 @@ async function loadFromSheets(){
 
     if(Array.isArray(mp) && mp.length){
       Object.keys(PROJECTS).forEach(k=>delete PROJECTS[k]);
-      mp.forEach(row=>{ if(row.ProjectID) PROJECTS[row.ProjectID] = {name:row.ProjectName, customer:row.Customer, phase:row.Phase}; });
+      mp.forEach(row=>{ if(row.ProjectID) PROJECTS[row.ProjectID] = {name:row.ProjectName||'', customer:row.Customer||'', phase:row.Phase||'', siteId:row.SiteID||''}; });
+      document.getElementById('kpiTotalProject').textContent = Object.keys(PROJECTS).length;
     }
-    if(Array.isArray(ma) && ma.length){
-      ACTIVITIES.length = 0;
-      ma.forEach(row=>{ if(row.Activity) ACTIVITIES.push(row.Activity); });
-    }
-    if(Array.isArray(ml) && ml.length){
-      LOCATIONS.length = 0;
-      ml.forEach(row=>{ if(row.Location) LOCATIONS.push(row.Location); });
-    }
-    if(Array.isArray(ts)){
-      applySheetTimesheet(ts);
-    }
+    if(Array.isArray(ma) && ma.length){ ACTIVITIES.length=0; ma.forEach(row=>{if(row.Activity)ACTIVITIES.push(row.Activity);}); }
+    if(Array.isArray(ml) && ml.length){ LOCATIONS.length=0; ml.forEach(row=>{if(row.Location)LOCATIONS.push(row.Location);}); }
+    if(Array.isArray(ts)) applySheetTimesheet(ts);
 
     statusEl.textContent = 'Terhubung ✓';
-    document.getElementById('btnConnectSheet').style.background = '#E7F9EE';
-    document.getElementById('btnConnectSheet').style.color = '#15803D';
-    document.getElementById('btnConnectSheet').style.borderColor = '#BBF0CE';
+    document.getElementById('btnConnectSheet').style.background='#E7F9EE';
+    document.getElementById('btnConnectSheet').style.color='#15803D';
+    document.getElementById('btnConnectSheet').style.borderColor='#BBF0CE';
+    badge.textContent = '✓ Sinkron dari Google Sheets';
+    showToast('Data berhasil dimuat dari Google Sheets','ok');
     render();
+    populateMasterModal();
   }catch(err){
     statusEl.textContent = 'Gagal konek — cek URL';
+    badge.textContent = '⚠ Gagal sinkron';
+    showToast('Gagal konek ke Google Sheets','err');
     console.error(err);
   }
 }
 
 function applySheetTimesheet(ts){
   ts.forEach(entry=>{
-    const row = rowState.find(r=>r.date === entry.Date || matchDateLoose(r.date, entry.Date));
+    const row = rowState.find(r=>matchDateLoose(r.date, entry.Date));
     if(row && !row.holiday){
       row.pid = entry.ProjectID || row.pid;
       row.activity = entry.Activity || row.activity;
@@ -351,6 +441,7 @@ function applySheetTimesheet(ts){
       row.mandays = entry.Mandays || 1.0;
       row.filled = !!entry.ProjectID;
       row.status = entry.Status || 'Draft';
+      row.sheetRowId = entry.RowID || null; // ID baris di sheet untuk delete
     }
     if(entry.ProjectID) trackUsage(entry.ProjectID, entry.Activity);
   });
@@ -358,79 +449,166 @@ function applySheetTimesheet(ts){
 function matchDateLoose(a,b){ return String(a).trim()===String(b).trim(); }
 
 function trackUsage(pid, activity){
-  if(pid){ usageFrequency[pid] = (usageFrequency[pid]||0) + 1; }
-  if(activity){
-    activityHistory = activityHistory.filter(a=>a!==activity);
-    activityHistory.unshift(activity);
-    activityHistory = activityHistory.slice(0,8);
-  }
+  if(pid){ usageFrequency[pid]=(usageFrequency[pid]||0)+1; }
+  if(activity){ activityHistory=activityHistory.filter(a=>a!==activity); activityHistory.unshift(activity); activityHistory=activityHistory.slice(0,8); }
   renderHistoryChips();
 }
 
 function renderHistoryChips(){
-  const box = document.getElementById('historyChips');
-  if(!box) return;
-  if(activityHistory.length===0){
-    box.innerHTML = '<span class="text-[11px] text-slate-300">Belum ada riwayat.</span>';
-    return;
-  }
-  box.innerHTML = activityHistory.map((a,i)=>`<button class="hist-chip" data-i="${i}" style="font-size:10.5px;padding:4px 8px;border-radius:999px;background:#F2F6FF;color:#3B82F6;border:1px solid #DCE8FF;">${a.length>28?a.slice(0,28)+'…':a}</button>`).join('');
+  const box=document.getElementById('historyChips'); if(!box)return;
+  if(!activityHistory.length){ box.innerHTML='<span class="text-[11px] text-slate-300">Belum ada riwayat.</span>'; return; }
+  box.innerHTML=activityHistory.map((a,i)=>`<button class="hist-chip" data-i="${i}" style="font-size:10.5px;padding:4px 8px;border-radius:999px;background:#F2F6FF;color:#3B82F6;border:1px solid #DCE8FF;">${a.length>28?a.slice(0,28)+'…':a}</button>`).join('');
   box.querySelectorAll('.hist-chip').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      if(activeRowIdx===null){ alert('Klik dulu kolom Activity pada baris yang mau diisi.'); return; }
-      const val = activityHistory[+btn.dataset.i];
-      rowState[activeRowIdx].activity = val;
-      render();
+    btn.addEventListener('click',()=>{
+      if(activeRowIdx===null){ showToast('Klik dulu kolom Activity pada baris yang mau diisi.'); return; }
+      rowState[activeRowIdx].activity=activityHistory[+btn.dataset.i]; render();
     });
   });
 }
 
-document.getElementById('menuTimesheet').addEventListener('click', ()=>{
-  const sm = document.getElementById('submenuTimesheet');
-  sm.style.display = sm.style.display==='none' ? 'block' : 'none';
+document.getElementById('menuTimesheet').addEventListener('click',()=>{
+  const sm=document.getElementById('submenuTimesheet');
+  sm.style.display=sm.style.display==='none'?'block':'none';
 });
 
-// ---------- MASTER DATA ----------
+// =========================================================
+// MASTER DATA
+// =========================================================
 const PROJECTS = {
-  "T01AMS41426 - BAR039": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation"},
-  "T01AMS41426 - BAR047": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation"},
-  "T01AMS41426 - BAR049": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation"},
-  "T01AMS41426 - BAO232": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation"},
-  "T01AMS41426 - GTO161": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation"},
-  "T01AMS41426 - KDI270": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation"},
+  "T01AMS41426 - BAR039": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation", siteId:"BAR039"},
+  "T01AMS41426 - BAR047": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation", siteId:"BAR047"},
+  "T01AMS41426 - BAR049": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation", siteId:"BAR049"},
+  "T01AMS41426 - BAO232": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation", siteId:"BAO232"},
+  "T01AMS41426 - GTO161": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation", siteId:"GTO161"},
+  "T01AMS41426 - KDI270": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation", siteId:"KDI270"},
 };
 const ACTIVITIES = [
   "Monitoring Progress, collect data supply BAUT, submit PRIMA, communicate with FICO",
   "Review BAUT","Review BAPP","Review BAST","Invoice","Vendor Registration","Meeting","Training"
 ];
 const LOCATIONS = ["The Prasada","WFH","Client Office","Regional Office"];
+const HOURS_PRESETS = ["08:30 - 17:30","08:00 - 17:00","09:00 - 18:00","08:30 - 12:30"];
 const ACTIVITY_FULL = "Monitoring Progress, collect data supply for BAUT from Mitra, escalate the dependency document online, input, submit document to PRIMA, FU (BAUT, BAPP, BAST, Invoicing) communicate with FICO, Regional TI.- Create &";
 
-// seed rows: [date, day, projectId or null, isHoliday, filled]
 let rowState = [
-  {date:"16 Jul 2026", day:"Kamis", pid:"T01AMS41426 - BAR039", activity:ACTIVITY_FULL, location:"The Prasada", hours:"08:30 - 17:30", mandays:1.0, holiday:false, filled:true},
-  {date:"17 Jul 2026", day:"Jumat", pid:"T01AMS41426 - BAR047", activity:ACTIVITY_FULL, location:"The Prasada", hours:"08:30 - 17:30", mandays:1.0, holiday:false, filled:true},
-  {date:"18 Jul 2026", day:"Sabtu", pid:null, activity:null, location:"The Prasada", hours:"08:30 - 17:30", mandays:1.0, holiday:true, filled:true},
-  {date:"19 Jul 2026", day:"Minggu", pid:null, activity:null, location:"The Prasada", hours:"08:30 - 17:30", mandays:1.0, holiday:true, filled:true},
-  {date:"20 Jul 2026", day:"Senin", pid:null, activity:null, location:null, hours:null, mandays:0, holiday:false, filled:false},
-  {date:"21 Jul 2026", day:"Selasa", pid:null, activity:null, location:null, hours:null, mandays:0, holiday:false, filled:false},
-  {date:"22 Jul 2026", day:"Rabu", pid:null, activity:null, location:null, hours:null, mandays:0, holiday:false, filled:false},
-  {date:"23 Jul 2026", day:"Kamis", pid:null, activity:null, location:null, hours:null, mandays:0, holiday:false, filled:false},
+  {date:"16 Jul 2026", day:"Kamis", pid:"T01AMS41426 - BAR039", activity:ACTIVITY_FULL, location:"The Prasada", hours:"08:30 - 17:30", mandays:1.0, holiday:false, filled:true, sheetRowId:null},
+  {date:"17 Jul 2026", day:"Jumat", pid:"T01AMS41426 - BAR047", activity:ACTIVITY_FULL, location:"The Prasada", hours:"08:30 - 17:30", mandays:1.0, holiday:false, filled:true, sheetRowId:null},
+  {date:"18 Jul 2026", day:"Sabtu", pid:null, activity:null, location:"The Prasada", hours:"08:30 - 17:30", mandays:1.0, holiday:true, filled:true, sheetRowId:null},
+  {date:"19 Jul 2026", day:"Minggu", pid:null, activity:null, location:"The Prasada", hours:"08:30 - 17:30", mandays:1.0, holiday:true, filled:true, sheetRowId:null},
+  {date:"20 Jul 2026", day:"Senin", pid:null, activity:null, location:null, hours:null, mandays:0, holiday:false, filled:false, sheetRowId:null},
+  {date:"21 Jul 2026", day:"Selasa", pid:null, activity:null, location:null, hours:null, mandays:0, holiday:false, filled:false, sheetRowId:null},
+  {date:"22 Jul 2026", day:"Rabu", pid:null, activity:null, location:null, hours:null, mandays:0, holiday:false, filled:false, sheetRowId:null},
+  {date:"23 Jul 2026", day:"Kamis", pid:null, activity:null, location:null, hours:null, mandays:0, holiday:false, filled:false, sheetRowId:null},
 ];
 
+document.getElementById('kpiTotalProject').textContent = Object.keys(PROJECTS).length;
+
+// =========================================================
+// SUGGEST HELPERS
+// =========================================================
+function closeSuggests(){ document.querySelectorAll('.suggest').forEach(e=>e.remove()); }
+document.addEventListener('click',(e)=>{
+  if(!e.target.closest('.suggest')&&!e.target.classList.contains('pid-input')&&!e.target.classList.contains('act-input')&&!e.target.classList.contains('loc-input')&&!e.target.classList.contains('hrs-input')) closeSuggests();
+});
+
+function positionSuggest(box, inputEl){
+  const rect = inputEl.getBoundingClientRect();
+  box.style.left = rect.left+'px';
+  box.style.top = (rect.bottom + window.scrollY + 4)+'px';
+  box.style.minWidth = rect.width+'px';
+  document.body.appendChild(box);
+}
+
+function makeSuggestBox(){ const b=document.createElement('div'); b.className='suggest'; return b; }
+
+// ---------- Project ID Suggest ----------
+function showPidSuggest(inputEl, idx){
+  closeSuggests();
+  const val = inputEl.value.trim().toUpperCase();
+  // Show ALL projects on focus (empty val), or filter on input
+  let matches = Object.keys(PROJECTS).filter(k=>
+    !val || k.toUpperCase().includes(val) || (PROJECTS[k].siteId||'').toUpperCase().includes(val)
+  );
+  if(!matches.length) return;
+  matches.sort((a,b)=>(usageFrequency[b]||0)-(usageFrequency[a]||0));
+  const box = makeSuggestBox();
+  box.style.maxWidth='400px';
+  matches.slice(0,12).forEach(m=>{
+    const p = PROJECTS[m];
+    const isFav = (usageFrequency[m]||0) >= 2;
+    const d = document.createElement('div'); d.className='suggest-item';
+    d.innerHTML=`<div><div class="s-main">${m}</div><div class="s-sub">${p.name} · ${p.customer}</div></div>${isFav?'<span class="s-badge">★ Favorit</span>':''}`;
+    d.addEventListener('click',()=>{
+      rowState[idx].pid=m; rowState[idx].filled=true;
+      if(!rowState[idx].mandays) rowState[idx].mandays=1.0;
+      checkAiSuggestion(idx); closeSuggests(); render();
+    });
+    box.appendChild(d);
+  });
+  positionSuggest(box, inputEl);
+}
+
+// ---------- Activity Suggest ----------
+function showActSuggest(inputEl, idx){
+  closeSuggests();
+  const val = inputEl.value.trim().toLowerCase();
+  const matches = val ? ACTIVITIES.filter(a=>a.toLowerCase().includes(val)) : ACTIVITIES;
+  if(!matches.length) return;
+  const box = makeSuggestBox(); box.style.maxWidth='360px';
+  matches.slice(0,8).forEach(m=>{
+    const d=document.createElement('div'); d.className='suggest-item';
+    d.innerHTML=`<span style="white-space:normal;font-size:12px;">${m}</span>`;
+    d.addEventListener('click',()=>{ rowState[idx].activity=m; inputEl.value=m; trackUsage(null,m); closeSuggests(); });
+    box.appendChild(d);
+  });
+  positionSuggest(box, inputEl);
+}
+
+// ---------- Location Suggest ----------
+function showLocSuggest(inputEl, idx){
+  closeSuggests();
+  const val = inputEl.value.trim().toLowerCase();
+  const matches = val ? LOCATIONS.filter(l=>l.toLowerCase().includes(val)) : LOCATIONS;
+  if(!matches.length) return;
+  const box = makeSuggestBox();
+  matches.forEach(m=>{
+    const d=document.createElement('div'); d.className='suggest-item';
+    d.textContent=m;
+    d.addEventListener('click',()=>{ rowState[idx].location=m; inputEl.value=m; closeSuggests(); });
+    box.appendChild(d);
+  });
+  positionSuggest(box, inputEl);
+}
+
+// ---------- Hours Suggest ----------
+function showHrsSuggest(inputEl, idx){
+  closeSuggests();
+  const val = inputEl.value.trim();
+  const matches = val ? HOURS_PRESETS.filter(h=>h.includes(val)) : HOURS_PRESETS;
+  if(!matches.length) return;
+  const box = makeSuggestBox();
+  matches.forEach(m=>{
+    const d=document.createElement('div'); d.className='suggest-item';
+    d.textContent=m;
+    d.addEventListener('click',()=>{ rowState[idx].hours=m; inputEl.value=m; closeSuggests(); });
+    box.appendChild(d);
+  });
+  positionSuggest(box, inputEl);
+}
+
+// =========================================================
+// RENDER
+// =========================================================
 const tsBody = document.getElementById('tsBody');
 
-function closeSuggests(){ document.querySelectorAll('.suggest').forEach(e=>e.remove()); }
-document.addEventListener('click', (e)=>{ if(!e.target.closest('.suggest') && !e.target.classList.contains('pid-input') && !e.target.classList.contains('act-input')) closeSuggests(); });
-
 function render(){
-  tsBody.innerHTML = "";
-  rowState.forEach((r, idx)=>{
-    const tr = document.createElement('tr');
+  tsBody.innerHTML='';
+  rowState.forEach((r,idx)=>{
+    const tr=document.createElement('tr');
     if(r.holiday) tr.classList.add('holiday');
 
     if(r.holiday){
-      tr.innerHTML = `
+      tr.innerHTML=`
         <td><input type="checkbox" class="rowChk"></td>
         <td>${idx+1}</td>
         <td class="datecell">${r.date}<br><span class="text-[10px]">${r.day}</span></td>
@@ -438,29 +616,43 @@ function render(){
         <td>Hari Libur</td><td>${r.location||'-'}</td><td>${r.hours||'-'}</td><td>${r.day}</td>
         <td><i data-lucide="minus" class="w-3.5 h-3.5 text-slate-300"></i></td>`;
     } else if(r.filled){
-      const p = PROJECTS[r.pid] || {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation"};
-      tr.innerHTML = `
+      const p=PROJECTS[r.pid]||{name:'Telkominfra', customer:'Telkom Infra', phase:'Implementation'};
+      tr.innerHTML=`
         <td><input type="checkbox" class="rowChk"></td>
         <td>${idx+1}</td>
         <td>${r.date}<br><span class="text-[10px] text-slate-400">${r.day}</span></td>
-        <td><select class="pidSelect" data-idx="${idx}">${Object.keys(PROJECTS).map(k=>`<option ${k===r.pid?'selected':''}>${k}</option>`).join('')}</select></td>
-        <td>${p.name}</td><td>${p.phase}</td><td>${p.customer}</td>
-        <td class="text-[11.5px]">${r.activity}</td>
-        <td>${r.location}</td><td>${r.hours}</td><td>${r.day}</td>
-        <td class="flex gap-2"><i data-lucide="copy" class="w-3.5 h-3.5 cursor-pointer text-blue-500 copyRow" data-idx="${idx}"></i><i data-lucide="trash-2" class="w-3.5 h-3.5 cursor-pointer text-red-500 delRow" data-idx="${idx}"></i></td>`;
+        <td>
+          <div class="relative">
+            <input class="pid-input pid-filled" data-idx="${idx}" value="${r.pid||''}" autocomplete="off" style="font-size:11px;padding-right:22px;">
+            <button class="open-master-btn absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500" data-idx="${idx}" title="Buka Master Data"><i data-lucide="search" class="w-3 h-3"></i></button>
+          </div>
+        </td>
+        <td style="font-size:11.5px;">${p.name}</td>
+        <td style="font-size:11.5px;">${p.phase}</td>
+        <td style="font-size:11.5px;">${p.customer}</td>
+        <td class="text-[11.5px]">${r.activity||''}</td>
+        <td>${r.location||''}</td>
+        <td>${r.hours||''}</td>
+        <td>${r.day}</td>
+        <td class="flex gap-2"><i data-lucide="copy" class="w-3.5 h-3.5 cursor-pointer text-blue-500 copyRow" data-idx="${idx}"></i><i data-lucide="trash-2" class="w-3.5 h-3.5 cursor-pointer text-red-500 delRow" data-idx="${idx}" title="Hapus & sync ke Sheets"></i></td>`;
     } else {
-      tr.innerHTML = `
+      tr.innerHTML=`
         <td><input type="checkbox" class="rowChk"></td>
         <td>${idx+1}</td>
         <td>${r.date}<br><span class="text-[10px] text-slate-400">${r.day}</span></td>
-        <td class="relative"><input class="pid-input" data-idx="${idx}" placeholder="T01AMS..." autocomplete="off"></td>
+        <td class="relative">
+          <div class="relative">
+            <input class="pid-input" data-idx="${idx}" value="${r.pid||''}" placeholder="Ketik Project ID..." autocomplete="off" style="padding-right:22px;">
+            <button class="open-master-btn absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500" data-idx="${idx}" title="Buka Master Data"><i data-lucide="search" class="w-3 h-3"></i></button>
+          </div>
+        </td>
         <td class="text-slate-300">-</td><td class="text-slate-300">-</td><td class="text-slate-300">-</td>
         <td class="relative">
           <input class="act-input" data-idx="${idx}" value="${r.activity||''}" placeholder="Ketik atau pilih aktivitas..." autocomplete="off">
-          ${r.aiSuggest ? `<div class="ai-suggest-banner" data-idx="${idx}" style="margin-top:4px;background:#FEF9E7;border:1px solid #F5E6A8;border-radius:6px;padding:5px 8px;font-size:10.5px;color:#8A6A16;display:flex;align-items:center;justify-content:space-between;gap:6px;"><span>Gunakan aktivitas kemarin?</span><button class="aiYesBtn" data-idx="${idx}" style="background:#F59E0B;color:#fff;border-radius:5px;padding:2px 8px;font-weight:700;">Ya</button></div>` : ''}
+          ${r.aiSuggest?`<div style="margin-top:4px;background:#FEF9E7;border:1px solid #F5E6A8;border-radius:6px;padding:5px 8px;font-size:10.5px;color:#8A6A16;display:flex;align-items:center;justify-content:space-between;gap:6px;"><span>Gunakan aktivitas kemarin?</span><button class="aiYesBtn" data-idx="${idx}" style="background:#F59E0B;color:#fff;border-radius:5px;padding:2px 8px;font-weight:700;">Ya</button></div>`:''}
         </td>
-        <td><select class="locSelect" data-idx="${idx}"><option value="">Pilih lokasi</option>${LOCATIONS.map(l=>`<option>${l}</option>`).join('')}</select></td>
-        <td><input placeholder="--:-- - --:--" class="hoursInput" data-idx="${idx}"></td>
+        <td><input class="loc-input" data-idx="${idx}" value="${r.location||''}" placeholder="Pilih lokasi..." autocomplete="off"></td>
+        <td><input class="hrs-input" data-idx="${idx}" value="${r.hours||''}" placeholder="08:30 - 17:30" autocomplete="off"></td>
         <td>${r.day}</td>
         <td><button class="addRowBtn text-green-500" data-idx="${idx}"><i data-lucide="plus-circle" class="w-4 h-4"></i></button></td>`;
     }
@@ -472,319 +664,360 @@ function render(){
 }
 
 function attachHandlers(){
-  document.querySelectorAll('.pidSelect').forEach(sel=>{
-    sel.addEventListener('change', e=>{ rowState[+e.target.dataset.idx].pid = e.target.value; render(); });
-  });
-  document.querySelectorAll('.copyRow').forEach(el=>{
-    el.addEventListener('click', e=>{
-      const idx = +e.currentTarget.dataset.idx;
-      const src = rowState[idx];
-      const next = rowState.find((r,i)=>i>idx && !r.holiday && !r.filled);
-      if(next){ Object.assign(next, {pid:src.pid, activity:src.activity, location:src.location, hours:src.hours, mandays:1.0, filled:true}); render(); }
-    });
-  });
-  document.querySelectorAll('.delRow').forEach(el=>{
-    el.addEventListener('click', e=>{
-      const idx = +e.currentTarget.dataset.idx;
-      Object.assign(rowState[idx], {pid:null, activity:null, location:null, hours:null, mandays:0, filled:false});
-      render();
-    });
-  });
-  document.querySelectorAll('.locSelect').forEach(sel=>{
-    sel.addEventListener('change', e=>{ /* stays in edit mode until Project ID picked */ });
-  });
-
+  // PID input (unfilled rows)
   document.querySelectorAll('.pid-input').forEach(inp=>{
+    inp.addEventListener('focus', e=>{ showPidSuggest(e.target, +e.target.dataset.idx); });
     inp.addEventListener('input', e=>{
-      closeSuggests();
-      const val = e.target.value.trim().toUpperCase();
-      if(!val) return;
-      let matches = Object.keys(PROJECTS).filter(k=>k.toUpperCase().includes(val));
-      if(matches.length===0) return;
-      // Favorite Project: yang paling sering dipakai naik ke atas
-      matches.sort((a,b)=>(usageFrequency[b]||0)-(usageFrequency[a]||0));
-      const box = document.createElement('div');
-      box.className='suggest';
-      const rect = e.target.getBoundingClientRect();
-      box.style.left = rect.left+'px'; box.style.top=(rect.bottom+window.scrollY+4)+'px'; box.style.position='fixed';
-      matches.forEach((m,mi)=>{
-        const d=document.createElement('div');
-        const isFav = usageFrequency[m] >= 2;
-        d.innerHTML = m.split(' - ')[1] + (isFav ? ' <span style="color:#F59E0B;font-size:10px;">★ Favorit</span>' : '');
-        d.addEventListener('click', ()=>{
-          const idx = +e.target.dataset.idx;
-          rowState[idx].pid = m; rowState[idx].filled = true;
-          if(!rowState[idx].mandays) rowState[idx].mandays = 1.0;
-          checkAiSuggestion(idx);
-          render();
-        });
-        box.appendChild(d);
-      });
-      document.body.appendChild(box);
+      rowState[+e.target.dataset.idx].pid = e.target.value;
+      showPidSuggest(e.target, +e.target.dataset.idx);
     });
   });
 
+  // Activity input
   document.querySelectorAll('.act-input').forEach(inp=>{
-    inp.addEventListener('focus', e=>{ activeRowIdx = +e.target.dataset.idx; });
+    inp.addEventListener('focus', e=>{ activeRowIdx=+e.target.dataset.idx; showActSuggest(e.target, +e.target.dataset.idx); });
     inp.addEventListener('input', e=>{
-      closeSuggests();
       rowState[+e.target.dataset.idx].activity = e.target.value;
-      const val = e.target.value.trim().toLowerCase();
-      if(!val) return;
-      const matches = ACTIVITIES.filter(a=>a.toLowerCase().includes(val));
-      if(matches.length===0) return;
-      const box = document.createElement('div');
-      box.className='suggest'; box.style.width='320px';
-      const rect = e.target.getBoundingClientRect();
-      box.style.left = rect.left+'px'; box.style.top=(rect.bottom+window.scrollY+4)+'px'; box.style.position='fixed';
-      matches.forEach(m=>{
-        const d=document.createElement('div'); d.textContent=m; d.style.whiteSpace='normal';
-        d.addEventListener('click', ()=>{
-          const idx = +e.target.dataset.idx;
-          rowState[idx].activity = m;
-          e.target.value = m;
-          trackUsage(null, m);
-          closeSuggests();
-        });
-        box.appendChild(d);
-      });
-      document.body.appendChild(box);
+      showActSuggest(e.target, +e.target.dataset.idx);
     });
   });
 
-  document.querySelectorAll('.hoursInput').forEach(inp=>{
+  // Location input
+  document.querySelectorAll('.loc-input').forEach(inp=>{
+    inp.addEventListener('focus', e=>{ showLocSuggest(e.target, +e.target.dataset.idx); });
+    inp.addEventListener('input', e=>{
+      rowState[+e.target.dataset.idx].location = e.target.value;
+      showLocSuggest(e.target, +e.target.dataset.idx);
+    });
+    inp.addEventListener('change', e=>{ rowState[+e.target.dataset.idx].location = e.target.value; });
+  });
+
+  // Hours input
+  document.querySelectorAll('.hrs-input').forEach(inp=>{
+    inp.addEventListener('focus', e=>{ showHrsSuggest(e.target, +e.target.dataset.idx); });
+    inp.addEventListener('input', e=>{
+      rowState[+e.target.dataset.idx].hours = e.target.value;
+      showHrsSuggest(e.target, +e.target.dataset.idx);
+    });
     inp.addEventListener('change', e=>{ rowState[+e.target.dataset.idx].hours = e.target.value; });
   });
 
-  document.querySelectorAll('.aiYesBtn').forEach(btn=>{
+  // Open master modal from row button
+  document.querySelectorAll('.open-master-btn').forEach(btn=>{
     btn.addEventListener('click', e=>{
-      const idx = +e.currentTarget.dataset.idx;
-      const prev = rowState[idx-1];
-      if(prev){
-        rowState[idx].activity = prev.activity;
-        rowState[idx].location = prev.location || 'The Prasada';
-        rowState[idx].hours = prev.hours || '08:30 - 17:30';
+      e.stopPropagation();
+      activeRowIdx = +btn.dataset.idx;
+      openMasterModal();
+    });
+  });
+
+  // Copy row
+  document.querySelectorAll('.copyRow').forEach(el=>{
+    el.addEventListener('click', e=>{
+      const idx=+e.currentTarget.dataset.idx;
+      const src=rowState[idx];
+      const next=rowState.find((r,i)=>i>idx&&!r.holiday&&!r.filled);
+      if(next){ Object.assign(next,{pid:src.pid,activity:src.activity,location:src.location,hours:src.hours,mandays:1.0,filled:true}); render(); }
+    });
+  });
+
+  // Delete row — also calls Sheets API to delete
+  document.querySelectorAll('.delRow').forEach(el=>{
+    el.addEventListener('click', async e=>{
+      const idx=+e.currentTarget.dataset.idx;
+      if(!confirm('Hapus entry ini? Data juga akan dihapus dari Google Sheets.')) return;
+      const r = rowState[idx];
+      // Call Sheets to delete
+      if(APPS_SCRIPT_URL && (r.sheetRowId || r.date)){
+        try{
+          await fetch(APPS_SCRIPT_URL,{
+            method:'POST',
+            headers:{'Content-Type':'text/plain;charset=utf-8'},
+            body:JSON.stringify({action:'deleteTimesheet', consultant:CONSULTANT_NAME, date:r.date, rowId:r.sheetRowId||null})
+          });
+          showToast('Entry dihapus dari Google Sheets','ok');
+        }catch(err){
+          showToast('Gagal hapus dari Sheets — cek koneksi','err');
+          console.error(err);
+        }
       }
-      rowState[idx].aiSuggest = false;
+      Object.assign(rowState[idx],{pid:null,activity:null,location:null,hours:null,mandays:0,filled:false,sheetRowId:null});
       render();
     });
   });
 
+  // Add row (save)
   document.querySelectorAll('.addRowBtn').forEach(btn=>{
     btn.addEventListener('click', e=>{
-      const idx = +e.currentTarget.dataset.idx;
-      const r = rowState[idx];
-      if(!r.pid){ alert('Pilih Project ID terlebih dahulu'); return; }
-      r.location = r.location || 'The Prasada';
-      r.hours = r.hours || '08:30 - 17:30';
-      r.mandays = 1.0; r.filled = true;
+      const idx=+e.currentTarget.dataset.idx;
+      const r=rowState[idx];
+      if(!r.pid){ showToast('Pilih Project ID terlebih dahulu','err'); return; }
+      r.location=r.location||'The Prasada';
+      r.hours=r.hours||'08:30 - 17:30';
+      r.mandays=1.0; r.filled=true;
       trackUsage(r.pid, r.activity);
       render();
     });
   });
+
+  // aiYes
+  document.querySelectorAll('.aiYesBtn').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const idx=+e.currentTarget.dataset.idx;
+      const prev=rowState[idx-1];
+      if(prev){ rowState[idx].activity=prev.activity; rowState[idx].location=prev.location||'The Prasada'; rowState[idx].hours=prev.hours||'08:30 - 17:30'; }
+      rowState[idx].aiSuggest=false; render();
+    });
+  });
 }
 
-// AI Suggestion: kalau Project ID baris ini sama dengan baris (non-libur) sebelumnya
-// dan Activity-nya masih kosong, tampilkan banner "Gunakan aktivitas kemarin?"
 function checkAiSuggestion(idx){
-  const cur = rowState[idx];
-  const prev = rowState[idx-1];
-  if(prev && !prev.holiday && prev.pid === cur.pid && !cur.activity){
-    cur.aiSuggest = true;
-  }
+  const cur=rowState[idx]; const prev=rowState[idx-1];
+  if(prev&&!prev.holiday&&prev.pid===cur.pid&&!cur.activity) cur.aiSuggest=true;
 }
 
 function updateTotals(){
-  const total = rowState.reduce((s,r)=>s+(r.mandays||0),0);
-  document.getElementById('totalMandays').textContent = total.toFixed(1);
+  document.getElementById('totalMandays').textContent = rowState.reduce((s,r)=>s+(r.mandays||0),0).toFixed(1);
 }
 
 render();
 renderHistoryChips();
 
-// ---------- TOOLBAR ACTIONS ----------
-document.getElementById('btnTambahBaris').addEventListener('click', ()=>{
-  const last = rowState[rowState.length-1];
-  rowState.push({date:"+1 hari", day:"", pid:null, activity:null, location:null, hours:null, mandays:0, holiday:false, filled:false});
+// =========================================================
+// TOOLBAR ACTIONS
+// =========================================================
+document.getElementById('btnTambahBaris').addEventListener('click',()=>{
+  rowState.push({date:"+1 hari",day:"",pid:null,activity:null,location:null,hours:null,mandays:0,holiday:false,filled:false,sheetRowId:null}); render();
+});
+document.getElementById('btnCopyYesterday').addEventListener('click',()=>{
+  const lastFilled=[...rowState].reverse().find(r=>r.filled&&!r.holiday);
+  const target=rowState.find(r=>!r.filled&&!r.holiday);
+  if(lastFilled&&target){ Object.assign(target,{pid:lastFilled.pid,activity:lastFilled.activity,location:lastFilled.location,hours:lastFilled.hours,mandays:1.0,filled:true}); render(); }
+  else showToast('Tidak ada baris kosong untuk diisi.');
+});
+document.getElementById('btnRepeat').addEventListener('click',()=>{
+  const n=prompt('Ulangi entry terakhir untuk berapa hari ke depan?','3');
+  const count=parseInt(n); if(!count) return;
+  const lastFilled=[...rowState].reverse().find(r=>r.filled&&!r.holiday); if(!lastFilled) return;
+  let applied=0;
+  for(const r of rowState){ if(applied>=count)break; if(!r.filled&&!r.holiday){ Object.assign(r,{pid:lastFilled.pid,activity:lastFilled.activity,location:lastFilled.location,hours:lastFilled.hours,mandays:1.0,filled:true}); applied++; } }
   render();
 });
-
-document.getElementById('btnCopyYesterday').addEventListener('click', ()=>{
-  const lastFilled = [...rowState].reverse().find(r=>r.filled && !r.holiday);
-  const target = rowState.find(r=>!r.filled && !r.holiday);
-  if(lastFilled && target){
-    Object.assign(target, {pid:lastFilled.pid, activity:lastFilled.activity, location:lastFilled.location, hours:lastFilled.hours, mandays:1.0, filled:true});
-    render();
-  } else { alert('Tidak ada baris kosong untuk diisi.'); }
+document.getElementById('btnBulkEdit').addEventListener('click',()=>{
+  const checked=[...document.querySelectorAll('.rowChk')].map((c,i)=>c.checked?i:-1).filter(i=>i>=0);
+  if(!checked.length){ showToast('Centang minimal 1 baris untuk Bulk Edit.'); return; }
+  const loc=prompt('Ubah Location untuk baris terpilih menjadi:','WFH'); if(!loc) return;
+  checked.forEach(i=>{if(rowState[i].filled) rowState[i].location=loc;}); render();
 });
-
-document.getElementById('btnRepeat').addEventListener('click', ()=>{
-  const n = prompt('Ulangi entry terakhir untuk berapa hari ke depan?','3');
-  const count = parseInt(n);
-  if(!count) return;
-  const lastFilled = [...rowState].reverse().find(r=>r.filled && !r.holiday);
-  if(!lastFilled) return;
-  let applied = 0;
-  for(const r of rowState){
-    if(applied>=count) break;
-    if(!r.filled && !r.holiday){
-      Object.assign(r, {pid:lastFilled.pid, activity:lastFilled.activity, location:lastFilled.location, hours:lastFilled.hours, mandays:1.0, filled:true});
-      applied++;
+document.getElementById('btnBulkDelete').addEventListener('click',async ()=>{
+  const checked=[...document.querySelectorAll('.rowChk')].map((c,i)=>c.checked?i:-1).filter(i=>i>=0);
+  if(!checked.length){ showToast('Centang minimal 1 baris.'); return; }
+  if(!confirm(`Hapus ${checked.length} baris? Data juga akan dihapus dari Google Sheets.`)) return;
+  for(const i of checked){
+    if(rowState[i].holiday) continue;
+    const r=rowState[i];
+    if(APPS_SCRIPT_URL && r.date){
+      try{
+        await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'deleteTimesheet',consultant:CONSULTANT_NAME,date:r.date,rowId:r.sheetRowId||null})});
+      }catch(err){ console.error(err); }
     }
+    Object.assign(rowState[i],{pid:null,activity:null,location:null,hours:null,mandays:0,filled:false,sheetRowId:null});
   }
+  showToast('Baris terpilih dihapus dari Sheets','ok');
   render();
 });
-
-document.getElementById('btnBulkEdit').addEventListener('click', ()=>{
-  const checked = [...document.querySelectorAll('.rowChk')].map((c,i)=>c.checked?i:-1).filter(i=>i>=0);
-  if(checked.length===0){ alert('Centang minimal 1 baris untuk Bulk Edit.'); return; }
-  const loc = prompt('Ubah Location untuk baris terpilih menjadi:', 'WFH');
-  if(!loc) return;
-  checked.forEach(i=>{ if(rowState[i].filled) rowState[i].location = loc; });
-  render();
+document.getElementById('chkAll').addEventListener('change',e=>{
+  document.querySelectorAll('.rowChk').forEach(c=>c.checked=e.target.checked);
 });
 
-document.getElementById('btnBulkDelete').addEventListener('click', ()=>{
-  const checked = [...document.querySelectorAll('.rowChk')].map((c,i)=>c.checked?i:-1).filter(i=>i>=0);
-  checked.forEach(i=>{ if(!rowState[i].holiday) Object.assign(rowState[i], {pid:null, activity:null, location:null, hours:null, mandays:0, filled:false}); });
-  render();
-});
+// =========================================================
+// MASTER DATA MODAL
+// =========================================================
+let masterTab = 'project';
+let masterSelected = null; // currently selected project key
+let masterTargetRowIdx = null; // row to inject selected project into
 
-document.getElementById('chkAll').addEventListener('change', e=>{
-  document.querySelectorAll('.rowChk').forEach(c=>c.checked = e.target.checked);
-});
-
-// ---------- EXPORT TO XLSX (identik template PT Integra) ----------
-async function exportTimesheet(){
-  const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet('Timesheet');
-  ws.columns = [{width:5},{width:14},{width:20},{width:14},{width:16},{width:14},{width:70},{width:14},{width:14},{width:12}];
-
-  ws.mergeCells('A1:C1');
-  ws.getCell('A1').value = 'TIMESHEET';
-  ws.getCell('A1').font = {bold:true, size:16};
-
-  const info = [['Consultant Name','Devry Rizkie H'],['Position','Project Admin'],['Project','Telkominfra'],['Month / Year','Juli 2026']];
-  info.forEach((pair,i)=>{
-    const r=i+2;
-    ws.getCell(`A${r}`).value = pair[0]; ws.getCell(`A${r}`).font = {bold:true};
-    ws.mergeCells(`B${r}:C${r}`); ws.getCell(`B${r}`).value = pair[1];
-  });
-
-  const headerRowIdx = 7;
-  const headers = ['No','Date','Project ID','Project Name','Project Phase','Customer','Activity Description\n(to be completed by consultant)','Location','Billable Hours','Mandays'];
-  const hRow = ws.getRow(headerRowIdx);
-  headers.forEach((h,i)=>{ hRow.getCell(i+1).value = h; });
-  hRow.eachCell(cell=>{
-    cell.font = {bold:true, color:{argb:'FFFFFFFF'}};
-    cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FF1F4E9C'}};
-    cell.alignment = {vertical:'middle', horizontal:'center', wrapText:true};
-    cell.border = {top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}};
-  });
-  hRow.height = 30;
-
-  rowState.forEach((r, idx)=>{
-    const rowIdx = headerRowIdx + 1 + idx;
-    const row = ws.getRow(rowIdx);
-    const p = r.pid ? (PROJECTS[r.pid]||{name:"Telkominfra",customer:"Telkom Infra",phase:"Implementation"}) : {name:"-",customer:"-",phase:"-"};
-    const vals = r.holiday
-      ? [idx+1, r.date, '-', '-', '-', '-', 'Hari Libur', '-', '-', r.day]
-      : [idx+1, r.date, r.pid||'-', p.name, p.phase, p.customer, r.activity||'-', r.location||'-', r.hours||'-', r.day];
-    vals.forEach((v,i)=>{ row.getCell(i+1).value = v; });
-    row.eachCell(cell=>{
-      cell.border = {top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}};
-      cell.alignment = {vertical:'top', wrapText:true};
-      if(r.holiday) cell.font = {italic:true, color:{argb:'FF888888'}};
-    });
-    if(idx % 2 === 1 && !r.holiday){
-      row.eachCell(cell=>{ cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFDCE6F5'}}; });
-    }
-  });
-
-  let legendStart = headerRowIdx + rowState.length + 2;
-  const legend = [
-    ['Others - Project ID','Description','','Others - Project ID','Description'],
-    ['Holiday','Sabtu/Minggu, Libur (Kalender)','','Internal Meeting','Internal meeting, coordination, project preparation'],
-    ['Sick Leave','Izin Sakit','','External Meeting','Presentation, meeting w/ external'],
-    ['Permission Leave','Cuti/Izin','','Timesheet','Timesheet record & Submit'],
-    ['Idle','Idle/No Client','','Learning/Training','Self Learning & Development'],
-    ['NONA','No news in attendance','','Standby Support','Standby customer support'],
-  ];
-  legend.forEach((r,i)=>{
-    const rowIdx = legendStart+i;
-    r.forEach((v,ci)=>{ ws.getCell(rowIdx, ci+1).value = v; });
-    if(i===0){
-      ws.getRow(rowIdx).eachCell(cell=>{
-        if(cell.value){ cell.font={bold:true,color:{argb:'FFFFFFFF'}}; cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE8A33D'}}; }
-      });
-    }
-  });
-
-  let sigStart = legendStart + legend.length + 3;
-  const sigHeaders = ['Prepare By','Proposed by,','Approved by,','Approved by,'];
-  const sigNames = ['Devry Rizkie H','Jodie Satria Effendi','Wisnu Hendra Pratama','Agus Triyanto'];
-  const sigTitles = ['','Project Manager','TIS Delivery Dept Head','Division Head'];
-  sigHeaders.forEach((h,i)=>{
-    ws.getCell(sigStart, i*2+1).value = h; ws.getCell(sigStart, i*2+1).font = {bold:true};
-    ws.getCell(sigStart+4, i*2+1).value = sigNames[i]; ws.getCell(sigStart+4, i*2+1).font = {bold:true};
-    ws.getCell(sigStart+5, i*2+1).value = sigTitles[i];
-  });
-
-  const buf = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buf], {type:'application/octet-stream'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'Timesheet_DevryRizkieH_July2026.xlsx';
-  a.click();
-  URL.revokeObjectURL(url);
+function openMasterModal(targetIdx){
+  masterTargetRowIdx = targetIdx !== undefined ? targetIdx : activeRowIdx;
+  masterSelected = null;
+  document.getElementById('btnModalSelect').disabled = true;
+  document.getElementById('masterSearch').value = '';
+  document.getElementById('modalMaster').style.display = 'flex';
+  populateMasterModal();
+  document.getElementById('masterSearch').focus();
 }
-document.getElementById('btnExport').addEventListener('click', exportTimesheet);
+function closeMasterModal(){
+  document.getElementById('modalMaster').style.display='none';
+  masterSelected=null;
+}
 
-// ---------- SIMPAN DRAFT / SUBMIT ke Google Sheets ----------
+document.getElementById('btnMasterDataOpen').addEventListener('click',()=>openMasterModal());
+document.getElementById('btnModalClose').addEventListener('click',closeMasterModal);
+document.getElementById('btnModalCancel').addEventListener('click',closeMasterModal);
+document.getElementById('modalMaster').addEventListener('click',e=>{ if(e.target===document.getElementById('modalMaster'))closeMasterModal(); });
+
+// Tab toggle
+document.querySelectorAll('.master-tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    masterTab=btn.dataset.tab;
+    document.querySelectorAll('.master-tab-btn').forEach(b=>{b.className='master-tab-btn btn btn-outline text-[11px]';});
+    btn.className='master-tab-btn btn btn-blue text-[11px]';
+    populateMasterModal();
+  });
+});
+
+// Search
+document.getElementById('masterSearch').addEventListener('input',populateMasterModal);
+document.getElementById('masterFilterCustomer').addEventListener('change',populateMasterModal);
+document.getElementById('btnMasterRefresh').addEventListener('click',()=>loadFromSheets());
+
+function populateMasterModal(){
+  const q=document.getElementById('masterSearch').value.trim().toLowerCase();
+  const custFilter=document.getElementById('masterFilterCustomer').value;
+
+  // Populate customer filter
+  const customers=[...new Set(Object.values(PROJECTS).map(p=>p.customer||''))].filter(Boolean);
+  const custSel=document.getElementById('masterFilterCustomer');
+  const curCust=custSel.value;
+  custSel.innerHTML='<option value="">Semua Customer</option>'+customers.map(c=>`<option value="${c}" ${c===curCust?'selected':''}>${c}</option>`).join('');
+
+  const keys=Object.keys(PROJECTS).filter(k=>{
+    const p=PROJECTS[k];
+    const siteId=p.siteId||(k.split(' - ')[1]||'');
+    const matchQ = !q || k.toLowerCase().includes(q) || siteId.toLowerCase().includes(q) || (p.name||'').toLowerCase().includes(q) || (p.customer||'').toLowerCase().includes(q);
+    const matchCust = !custFilter || p.customer===custFilter;
+    // Tab filter
+    if(masterTab==='site') return matchQ && matchCust && !!siteId;
+    return matchQ && matchCust;
+  });
+
+  const tbody=document.getElementById('masterTBody');
+  tbody.innerHTML='';
+  const emptyEl=document.getElementById('masterEmpty');
+  document.getElementById('masterCount').textContent=`${keys.length} project ditemukan`;
+
+  if(!keys.length){ emptyEl.classList.remove('hidden'); return; }
+  emptyEl.classList.add('hidden');
+
+  keys.forEach(k=>{
+    const p=PROJECTS[k];
+    const siteId=p.siteId||(k.includes(' - ')?k.split(' - ')[1]:'');
+    const tr=document.createElement('tr');
+    if(k===masterSelected) tr.classList.add('master-row-selected');
+    tr.innerHTML=`
+      <td style="font-weight:600;font-size:12px;">${k}</td>
+      <td>${p.name||'-'}</td>
+      <td><span style="background:#EDF0F6;border-radius:5px;padding:2px 7px;font-size:11px;">${p.phase||'-'}</span></td>
+      <td>${p.customer||'-'}</td>
+      <td style="font-family:monospace;font-size:11.5px;color:#6D28D9;">${siteId||'-'}</td>
+      <td><button class="btn btn-blue text-[10.5px] pick-master-btn" data-key="${k}" style="padding:4px 10px;">Pilih</button></td>`;
+    // Click row to select
+    tr.addEventListener('click',e=>{
+      if(e.target.classList.contains('pick-master-btn')) return;
+      masterSelected=k;
+      document.querySelectorAll('#masterTBody tr').forEach(r=>r.classList.remove('master-row-selected'));
+      tr.classList.add('master-row-selected');
+      document.getElementById('btnModalSelect').disabled=false;
+    });
+    tbody.appendChild(tr);
+  });
+
+  // Pick button (immediate)
+  document.querySelectorAll('.pick-master-btn').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      applyMasterSelection(btn.dataset.key);
+    });
+  });
+}
+
+function applyMasterSelection(key){
+  if(masterTargetRowIdx !== null && masterTargetRowIdx >= 0){
+    rowState[masterTargetRowIdx].pid=key;
+    rowState[masterTargetRowIdx].filled=true;
+    if(!rowState[masterTargetRowIdx].mandays) rowState[masterTargetRowIdx].mandays=1.0;
+    checkAiSuggestion(masterTargetRowIdx);
+    trackUsage(key, null);
+    render();
+    showToast(`Project "${key}" diterapkan ke baris ${masterTargetRowIdx+1}`,'ok');
+  }
+  closeMasterModal();
+}
+
+document.getElementById('btnModalSelect').addEventListener('click',()=>{
+  if(masterSelected) applyMasterSelection(masterSelected);
+});
+
+// =========================================================
+// SAVE & SUBMIT TO SHEETS
+// =========================================================
 function buildTimesheetPayload(status){
-  return rowState.filter(r=>r.filled || r.holiday).map(r=>{
-    const p = r.pid ? (PROJECTS[r.pid]||{name:'Telkominfra',customer:'Telkom Infra',phase:'Implementation'}) : {name:'-',customer:'-',phase:'-'};
+  return rowState.filter(r=>r.filled||r.holiday).map(r=>{
+    const p=r.pid?(PROJECTS[r.pid]||{name:'Telkominfra',customer:'Telkom Infra',phase:'Implementation'}):{name:'-',customer:'-',phase:'-'};
     return {
-      Date: r.date, Day: r.day, ConsultantName: CONSULTANT_NAME,
-      ProjectID: r.holiday ? '' : (r.pid||''),
-      ProjectName: r.holiday ? '' : p.name,
-      Phase: r.holiday ? '' : p.phase,
-      Customer: r.holiday ? '' : p.customer,
-      Activity: r.holiday ? 'Hari Libur' : (r.activity||''),
-      Location: r.location||'', Hours: r.hours||'', Mandays: r.mandays||0,
-      Holiday: r.holiday ? 'Yes' : 'No', Status: status
+      Date:r.date, Day:r.day, ConsultantName:CONSULTANT_NAME,
+      ProjectID:r.holiday?'':(r.pid||''),
+      ProjectName:r.holiday?'':p.name,
+      Phase:r.holiday?'':p.phase,
+      Customer:r.holiday?'':p.customer,
+      Activity:r.holiday?'Hari Libur':(r.activity||''),
+      Location:r.location||'', Hours:r.hours||'', Mandays:r.mandays||0,
+      Holiday:r.holiday?'Yes':'No', Status:status
     };
   });
 }
 
 async function saveToSheets(status){
   if(!APPS_SCRIPT_URL){
-    alert('Belum tersambung ke Google Sheets. Klik "Sambungkan Google Sheets" di kanan atas dulu.\n\n(Untuk sekarang, perubahan status "'+status+'" hanya berlaku di tampilan ini.)');
+    showToast('Belum tersambung ke Google Sheets.','err');
     return;
   }
-  const rows = buildTimesheetPayload(status);
+  const rows=buildTimesheetPayload(status);
   try{
-    await fetch(APPS_SCRIPT_URL, {
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'}, // hindari CORS preflight
-      body: JSON.stringify({action:'saveTimesheet', rows})
-    });
+    await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'saveTimesheet',rows})});
     if(status==='Submitted'){
-      await fetch(APPS_SCRIPT_URL, {
-        method:'POST',
-        headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify({action:'submitTimesheet', consultant:CONSULTANT_NAME, month:CURRENT_MONTH, status:'Submitted'})
-      });
+      await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'submitTimesheet',consultant:CONSULTANT_NAME,month:CURRENT_MONTH,status:'Submitted'})});
     }
-    alert(status==='Draft' ? 'Draft tersimpan ke Google Sheets.' : 'Timesheet berhasil di-submit ke Project Manager.');
+    showToast(status==='Draft'?'Draft tersimpan ke Google Sheets.':'Timesheet berhasil di-submit ke Project Manager.','ok');
   }catch(err){
-    console.error(err);
-    alert('Gagal menyimpan ke Google Sheets. Cek koneksi / URL Apps Script.');
+    console.error(err); showToast('Gagal menyimpan ke Google Sheets.','err');
   }
 }
 
-document.getElementById('btnSimpanDraft').addEventListener('click', ()=>saveToSheets('Draft'));
-document.getElementById('btnSubmit').addEventListener('click', ()=>saveToSheets('Submitted'));
+document.getElementById('btnSimpanDraft').addEventListener('click',()=>saveToSheets('Draft'));
+document.getElementById('btnSubmit').addEventListener('click',()=>saveToSheets('Submitted'));
+
+// =========================================================
+// EXPORT EXCEL
+// =========================================================
+async function exportTimesheet(){
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet('Timesheet');
+  ws.columns=[{width:5},{width:14},{width:20},{width:14},{width:16},{width:14},{width:70},{width:14},{width:14},{width:12}];
+  ws.mergeCells('A1:C1'); ws.getCell('A1').value='TIMESHEET'; ws.getCell('A1').font={bold:true,size:16};
+  const info=[['Consultant Name','Devry Rizkie H'],['Position','Project Admin'],['Project','Telkominfra'],['Month / Year','Juli 2026']];
+  info.forEach((pair,i)=>{ const r=i+2; ws.getCell(`A${r}`).value=pair[0]; ws.getCell(`A${r}`).font={bold:true}; ws.mergeCells(`B${r}:C${r}`); ws.getCell(`B${r}`).value=pair[1]; });
+  const headerRowIdx=7;
+  const headers=['No','Date','Project ID','Project Name','Project Phase','Customer','Activity Description\n(to be completed by consultant)','Location','Billable Hours','Mandays'];
+  const hRow=ws.getRow(headerRowIdx);
+  headers.forEach((h,i)=>{ hRow.getCell(i+1).value=h; });
+  hRow.eachCell(cell=>{ cell.font={bold:true,color:{argb:'FFFFFFFF'}}; cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1F4E9C'}}; cell.alignment={vertical:'middle',horizontal:'center',wrapText:true}; cell.border={top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}}; });
+  hRow.height=30;
+  rowState.forEach((r,idx)=>{
+    const rowIdx=headerRowIdx+1+idx; const row=ws.getRow(rowIdx);
+    const p=r.pid?(PROJECTS[r.pid]||{name:'Telkominfra',customer:'Telkom Infra',phase:'Implementation'}):{name:'-',customer:'-',phase:'-'};
+    const vals=r.holiday?[idx+1,r.date,'-','-','-','-','Hari Libur','-','-',r.day]:[idx+1,r.date,r.pid||'-',p.name,p.phase,p.customer,r.activity||'-',r.location||'-',r.hours||'-',r.day];
+    vals.forEach((v,i)=>{ row.getCell(i+1).value=v; });
+    row.eachCell(cell=>{ cell.border={top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}}; cell.alignment={vertical:'top',wrapText:true}; if(r.holiday)cell.font={italic:true,color:{argb:'FF888888'}}; });
+    if(idx%2===1&&!r.holiday){ row.eachCell(cell=>{ cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFDCE6F5'}}; }); }
+  });
+  const buf=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:'application/octet-stream'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='Timesheet_DevryRizkieH_July2026.xlsx'; a.click();
+  URL.revokeObjectURL(url);
+}
+document.getElementById('btnExport').addEventListener('click',exportTimesheet);
 </script>
 </body>
 </html>
