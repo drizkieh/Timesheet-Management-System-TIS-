@@ -325,10 +325,10 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
           <thead>
             <tr>
               <th>Project ID</th>
+              <th>Site ID</th>
               <th>Project Name</th>
               <th>Phase</th>
               <th>Customer</th>
-              <th>Site ID</th>
               <th>Aksi</th>
             </tr>
           </thead>
@@ -407,7 +407,13 @@ async function loadFromSheets(){
 
     if(Array.isArray(mp) && mp.length){
       Object.keys(PROJECTS).forEach(k=>delete PROJECTS[k]);
-      mp.forEach(row=>{ if(row.ProjectID) PROJECTS[row.ProjectID] = {name:row.ProjectName||'', customer:row.Customer||'', phase:row.Phase||'', siteId:row.SiteID||''}; });
+      mp.forEach(row=>{
+        if(!row.ProjectID) return;
+        // Gabungkan ProjectID - SiteID sebagai key unik per baris
+        const siteId = row.SiteID || '';
+        const key = siteId ? `${row.ProjectID} - ${siteId}` : row.ProjectID;
+        PROJECTS[key] = {name:row.ProjectName||'', customer:row.Customer||'', phase:row.Phase||'', siteId:siteId, projectId:row.ProjectID};
+      });
       document.getElementById('kpiTotalProject').textContent = Object.keys(PROJECTS).length;
     }
     if(Array.isArray(ma) && ma.length){ ACTIVITIES.length=0; ma.forEach(row=>{if(row.Activity)ACTIVITIES.push(row.Activity);}); }
@@ -537,7 +543,9 @@ function showPidSuggest(inputEl, idx){
     const p = PROJECTS[m];
     const isFav = (usageFrequency[m]||0) >= 2;
     const d = document.createElement('div'); d.className='suggest-item';
-    d.innerHTML=`<div><div class="s-main">${m}</div><div class="s-sub">${p.name} · ${p.customer}</div></div>${isFav?'<span class="s-badge">★ Favorit</span>':''}`;
+    const baseId = p.projectId || m.split(' - ')[0];
+    const siteLabel = p.siteId ? `<span style="font-family:monospace;color:#6D28D9;font-size:11px;"> - ${p.siteId}</span>` : '';
+    d.innerHTML=`<div><div class="s-main">${baseId}${siteLabel}</div><div class="s-sub">${p.name} · ${p.customer}</div></div>${isFav?'<span class="s-badge">★ Favorit</span>':''}`;
     d.addEventListener('click',()=>{
       rowState[idx].pid=m; rowState[idx].filled=true;
       if(!rowState[idx].mandays) rowState[idx].mandays=1.0;
@@ -904,12 +912,13 @@ function populateMasterModal(){
     const siteId=p.siteId||(k.includes(' - ')?k.split(' - ')[1]:'');
     const tr=document.createElement('tr');
     if(k===masterSelected) tr.classList.add('master-row-selected');
+    const baseId = p.projectId || k.split(' - ')[0];
     tr.innerHTML=`
-      <td style="font-weight:600;font-size:12px;">${k}</td>
+      <td style="font-weight:600;font-size:12px;">${baseId}</td>
+      <td style="font-family:monospace;font-size:12px;color:#6D28D9;font-weight:700;">${siteId||'-'}</td>
       <td>${p.name||'-'}</td>
       <td><span style="background:#EDF0F6;border-radius:5px;padding:2px 7px;font-size:11px;">${p.phase||'-'}</span></td>
       <td>${p.customer||'-'}</td>
-      <td style="font-family:monospace;font-size:11.5px;color:#6D28D9;">${siteId||'-'}</td>
       <td><button class="btn btn-blue text-[10.5px] pick-master-btn" data-key="${k}" style="padding:4px 10px;">Pilih</button></td>`;
     // Click row to select
     tr.addEventListener('click',e=>{
