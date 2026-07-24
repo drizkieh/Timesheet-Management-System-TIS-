@@ -533,7 +533,7 @@ function showPidSuggest(inputEl, idx){
   matches.sort((a,b)=>(usageFrequency[b]||0)-(usageFrequency[a]||0));
   const box = makeSuggestBox();
   box.style.maxWidth='400px';
-  matches.slice(0,12).forEach(m=>{
+  matches.forEach(m=>{
     const p = PROJECTS[m];
     const isFav = (usageFrequency[m]||0) >= 2;
     const d = document.createElement('div'); d.className='suggest-item';
@@ -555,7 +555,7 @@ function showActSuggest(inputEl, idx){
   const matches = val ? ACTIVITIES.filter(a=>a.toLowerCase().includes(val)) : ACTIVITIES;
   if(!matches.length) return;
   const box = makeSuggestBox(); box.style.maxWidth='360px';
-  matches.slice(0,8).forEach(m=>{
+  matches.forEach(m=>{
     const d=document.createElement('div'); d.className='suggest-item';
     d.innerHTML=`<span style="white-space:normal;font-size:12px;">${m}</span>`;
     d.addEventListener('click',()=>{ rowState[idx].activity=m; inputEl.value=m; trackUsage(null,m); closeSuggests(); });
