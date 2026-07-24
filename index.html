@@ -313,7 +313,9 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
           <option value="">Semua Customer</option>
         </select>
         <button id="btnMasterRefresh" class="btn btn-outline text-[11px]"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Refresh</button>
+        <button id="btnDebugCols" class="btn btn-outline text-[11px]" title="Lihat nama kolom dari Sheets" style="color:#8B5CF6;border-color:#DDD6FE;"><i data-lucide="terminal" class="w-3.5 h-3.5"></i>Debug Kolom</button>
       </div>
+      <div id="debugColsInfo" style="display:none;margin-bottom:8px;background:#F8F4FF;border:1px solid #DDD6FE;border-radius:8px;padding:8px 12px;font-size:11px;color:#5B21B6;font-family:monospace;"></div>
       <!-- Tab: Project / Site -->
       <div class="flex gap-1 mb-3">
         <button class="master-tab-btn btn btn-blue text-[11px]" data-tab="project">Project ID</button>
@@ -407,12 +409,21 @@ async function loadFromSheets(){
 
     if(Array.isArray(mp) && mp.length){
       Object.keys(PROJECTS).forEach(k=>delete PROJECTS[k]);
+      // Log raw keys dari sheet pertama untuk debug
+      if(mp[0]) console.log('[MasterProject] Kolom dari Sheets:', Object.keys(mp[0]));
       mp.forEach(row=>{
         if(!row.ProjectID) return;
-        // Gabungkan ProjectID - SiteID sebagai key unik per baris
-        const siteId = row.SiteID || '';
-        const key = siteId ? `${row.ProjectID} - ${siteId}` : row.ProjectID;
-        PROJECTS[key] = {name:row.ProjectName||'', customer:row.Customer||'', phase:row.Phase||'', siteId:siteId, projectId:row.ProjectID};
+        // Coba berbagai kemungkinan nama kolom Site ID dari Sheets
+        const siteId = row.SiteID || row['Site ID'] || row.SiteId || row.site_id
+                     || row.SITEID || row['Site_ID'] || row.SiteCode || row.siteid || '';
+        const key = siteId ? (row.ProjectID + ' - ' + siteId) : row.ProjectID;
+        PROJECTS[key] = {
+          name: row.ProjectName || row['Project Name'] || '',
+          customer: row.Customer || '',
+          phase: row.Phase || '',
+          siteId: siteId,
+          projectId: row.ProjectID
+        };
       });
       document.getElementById('kpiTotalProject').textContent = Object.keys(PROJECTS).length;
     }
@@ -878,6 +889,37 @@ document.querySelectorAll('.master-tab-btn').forEach(btn=>{
 document.getElementById('masterSearch').addEventListener('input',populateMasterModal);
 document.getElementById('masterFilterCustomer').addEventListener('change',populateMasterModal);
 document.getElementById('btnMasterRefresh').addEventListener('click',()=>loadFromSheets());
+
+// ── Debug: tampilkan nama kolom asli dari Sheets ──
+let _rawMasterSample = null; // simpan 1 baris sample dari Sheets
+
+document.getElementById('btnDebugCols').addEventListener('click', async ()=>{
+  const box = document.getElementById('debugColsInfo');
+  if(!APPS_SCRIPT_URL){ box.style.display='block'; box.innerHTML='⚠ Belum konek ke Sheets.'; return; }
+  if(_rawMasterSample){
+    box.style.display = box.style.display==='none' ? 'block' : 'none';
+    return;
+  }
+  box.style.display='block';
+  box.innerHTML='⏳ Mengambil data...';
+  try{
+    const mp = await fetch(APPS_SCRIPT_URL+'?action=getMasterProject').then(r=>r.json());
+    if(mp && mp[0]){
+      _rawMasterSample = mp[0];
+      const cols = Object.keys(mp[0]);
+      box.innerHTML = '<b>Nama kolom di Sheets (' + mp.length + ' baris):</b><br>'
+        + cols.map(c => {
+            const v = mp[0][c];
+            const isSite = c.toLowerCase().replace(/[^a-z]/g,'').includes('site');
+            return '<span style="' + (isSite ? 'background:#6D28D9;color:#fff;border-radius:3px;padding:1px 4px;' : '') + '">' + c + '</span>: <i>' + v + '</i>';
+          }).join(' &nbsp;|&nbsp; ');
+    } else {
+      box.innerHTML = '⚠ Data kosong atau format tidak sesuai.';
+    }
+  } catch(e) {
+    box.innerHTML = '⚠ Gagal fetch: ' + e.message;
+  }
+});
 
 function populateMasterModal(){
   const q=document.getElementById('masterSearch').value.trim().toLowerCase();
