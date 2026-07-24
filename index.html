@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Smart Timesheet Management System</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<style>
+:root{
+  --navy:#0E1730;
+  --navy2:#151F3D;
+  --page:#F4F6FB;
+  --card:#FFFFFF;
+  --border:#E5E9F2;
+  --text:#1E2532;
+  --muted:#8A93A6;
+  --blue:#3B82F6;
+  --green:#22C55E;
+  --amber:#F59E0B;
+  --purple:#8B5CF6;
+  --red:#EF4444;
+}
+*{box-sizing:border-box;}
+body{background:var(--page);color:var(--text);font-family:'Inter',system-ui,-apple-system,sans-serif;font-size:14px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;color:#A7B0C4;font-size:13.5px;cursor:pointer;transition:.15s;}
+.nav-item:hover{background:#1B2547;color:#fff;}
+.nav-item.active{background:linear-gradient(90deg,#1E2A55,transparent);color:#fff;border-left:3px solid var(--blue);padding-left:9px;}
+.icon-circle{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;}
+.btn{font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:.15s;border:1px solid transparent;}
+.btn:hover{transform:translateY(-1px);}
+.btn-blue{background:var(--blue);color:#fff;}
+.btn-outline{background:#fff;border:1px solid var(--border);color:var(--text);}
+.btn-green{background:var(--green);color:#fff;}
+.btn-gray{background:#EEF1F6;color:#475066;}
+table.ts{border-collapse:separate;border-spacing:0;width:100%;}
+table.ts thead th{background:#F7F9FD;color:#5A6479;font-size:11px;text-transform:uppercase;letter-spacing:.03em;padding:9px 8px;border-bottom:1px solid var(--border);text-align:left;}
+table.ts tbody td{padding:8px;border-bottom:1px solid var(--border);font-size:12.5px;vertical-align:top;}
+table.ts tbody tr.holiday td{color:#D8455B;font-style:italic;font-size:12px;}
+table.ts tbody tr.holiday td.datecell{color:#D8455B;font-weight:600;font-style:normal;}
+input,select{background:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 9px;font-size:12px;color:var(--text);width:100%;}
+input:focus,select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.12);}
+input::placeholder{color:#B2BAC9;}
+.badge-num{width:22px;height:22px;border-radius:999px;background:var(--red);color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;}
+.suggest{position:absolute;z-index:30;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 28px rgba(20,30,60,.12);width:220px;overflow:hidden;}
+.suggest div{padding:8px 12px;font-size:12.5px;cursor:pointer;}
+.suggest div:hover{background:#F2F6FF;color:var(--blue);}
+.step-dot{width:26px;height:26px;border-radius:999px;background:var(--blue);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.progress-track{background:#EDF0F6;border-radius:999px;height:8px;overflow:hidden;}
+</style>
+</head>
+<body>
+<div class="flex min-h-screen">
+
+  <!-- SIDEBAR -->
+  <aside class="w-56 shrink-0 flex flex-col justify-between p-4" style="background:var(--navy);">
+    <div>
+      <div class="flex items-center gap-2 px-1 mb-6">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm" style="background:linear-gradient(135deg,#F59E0B,#EF4444);color:#fff;">I</div>
+        <div>
+          <div class="font-bold text-sm text-white leading-none">INTEGRA</div>
+          <div class="text-[9px] text-slate-400 tracking-wide">SOLUSI MANDIRI</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 px-2 py-3 rounded-xl mb-5" style="background:#1B2547;">
+        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Devry" class="w-9 h-9 rounded-full bg-white"/>
+        <div class="text-xs">
+          <div class="font-semibold text-white">Devry Rizkie H</div>
+          <div class="text-slate-400">Project Admin</div>
+          <div class="flex items-center gap-1 text-[10px] text-green-400"><span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>Online</div>
+        </div>
+      </div>
+      <nav class="space-y-1">
+        <div class="nav-item active" data-view="dashboard"><i data-lucide="layout-dashboard" class="w-4 h-4"></i>Dashboard</div>
+        <div>
+          <div class="nav-item" id="menuTimesheet"><i data-lucide="calendar-clock" class="w-4 h-4"></i>Timesheet<i data-lucide="chevron-down" class="w-3.5 h-3.5 ml-auto"></i></div>
+          <div class="ml-8 mt-1 space-y-1 text-[12.5px]" id="submenuTimesheet">
+            <div class="nav-item active" data-view="entry" style="padding-left:9px;"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>Input Timesheet</div>
+            <div class="nav-item" data-view="mytimesheet" style="padding-left:9px;"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>My Timesheet</div>
+          </div>
+        </div>
+        <div class="nav-item" data-view="project"><i data-lucide="briefcase" class="w-4 h-4"></i>Project</div>
+        <div class="nav-item" data-view="master"><i data-lucide="database" class="w-4 h-4"></i>Master Data</div>
+        <div class="nav-item" data-view="report"><i data-lucide="bar-chart-3" class="w-4 h-4"></i>Report</div>
+        <div class="nav-item" data-view="approval"><i data-lucide="check-check" class="w-4 h-4"></i>Approval</div>
+        <div class="nav-item" data-view="calendar"><i data-lucide="calendar" class="w-4 h-4"></i>Calendar</div>
+        <div class="nav-item" data-view="setting"><i data-lucide="settings" class="w-4 h-4"></i>Setting</div>
+      </nav>
+    </div>
+    <div class="card p-3" style="background:#1B2547;border-color:#28325A;">
+      <div class="text-[12px] font-semibold text-white mb-1">Butuh Bantuan?</div>
+      <div class="text-[11px] text-slate-400 mb-2">Hubungi Tim Support kami</div>
+      <button class="btn btn-blue w-full justify-center text-[11px]"><i data-lucide="headset" class="w-3.5 h-3.5"></i>Hubungi Support</button>
+      <div class="text-[10px] text-slate-500 mt-3">© 2026 Integra Solusi Mandiri<br>v1.0.0</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="flex-1 flex flex-col">
+    <!-- TOPBAR -->
+    <header class="flex items-center justify-between px-6 py-4" style="background:#fff;border-bottom:1px solid var(--border);">
+      <div class="flex items-center gap-3">
+        <i data-lucide="menu" class="w-5 h-5 text-slate-500"></i>
+        <h1 class="text-lg font-bold" id="pageTitle">Dashboard</h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium" style="background:#F4F6FB;border:1px solid var(--border);"><i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>Juli 2026<i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i></div>
+        <button id="btnConnectSheet" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#FEF2E3;color:#92680B;border:1px solid #F5E6A8;"><i data-lucide="plug-zap" class="w-3.5 h-3.5"></i><span id="connStatus">Sambungkan Google Sheets</span></button>
+        <div class="relative"><i data-lucide="bell" class="w-5 h-5 text-slate-500"></i><span class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold">5</span></div>
+        <div class="flex items-center gap-2">
+          <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Devry" class="w-8 h-8 rounded-full"/>
+          <span class="text-xs font-semibold">Devry Rizkie H</span>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+        </div>
+      </div>
+    </header>
+
+    <main class="p-6 flex-1">
+    <!-- ============ DASHBOARD / ENTRY VIEW ============ -->
+    <section id="view-entry-wrap">
+      <div class="grid grid-cols-[1fr_320px] gap-5">
+        <div>
+          <!-- KPI ROW -->
+          <div class="grid grid-cols-4 gap-4 mb-5">
+            <div class="card p-4 flex items-center gap-3">
+              <div class="icon-circle" style="background:#E9F0FE;"><i data-lucide="briefcase" class="w-5 h-5" style="color:var(--blue);"></i></div>
+              <div><div class="text-[11px] text-slate-400">Total Project</div><div class="text-xl font-bold">126</div><div class="text-[10px] text-slate-400">Active Project</div></div>
+            </div>
+            <div class="card p-4 flex items-center gap-3">
+              <div class="icon-circle" style="background:#E7F9EE;"><i data-lucide="calendar-check" class="w-5 h-5" style="color:var(--green);"></i></div>
+              <div><div class="text-[11px] text-slate-400">Timesheet Bulan Ini</div><div class="text-xl font-bold">21 <span class="text-sm text-slate-400 font-normal">/ 22</span></div><div class="text-[10px] text-slate-400">Hari diisi</div></div>
+            </div>
+            <div class="card p-4 flex items-center gap-3">
+              <div class="icon-circle" style="background:#FEF2E3;"><i data-lucide="clock" class="w-5 h-5" style="color:var(--amber);"></i></div>
+              <div><div class="text-[11px] text-slate-400">Jam Kerja Bulan Ini</div><div class="text-xl font-bold">168</div><div class="text-[10px] text-slate-400">Total Jam</div></div>
+            </div>
+            <div class="card p-4 flex items-center gap-3">
+              <div class="icon-circle" style="background:#F2ECFE;"><i data-lucide="shield-check" class="w-5 h-5" style="color:var(--purple);"></i></div>
+              <div><div class="text-[11px] text-slate-400">Status Approval</div><div class="text-base font-bold">Draft</div><div class="text-[10px] text-slate-400">Belum di submit</div></div>
+            </div>
+          </div>
+
+          <!-- INFO TIMESHEET -->
+          <div class="card p-4 mb-5">
+            <div class="flex items-center justify-between mb-3">
+              <div class="text-sm font-bold">Informasi Timesheet</div>
+              <button class="btn btn-outline"><i data-lucide="refresh-cw" class="w-3.5 h-3.5" style="color:var(--purple);"></i>Ganti Bulan</button>
+            </div>
+            <div class="grid grid-cols-2 gap-y-2 text-xs">
+              <div class="flex gap-2"><span class="text-slate-400 w-32">Consultant Name</span><span class="font-semibold">Devry Rizkie H</span></div>
+              <div class="flex gap-2"><span class="text-slate-400 w-24">Customer</span><span class="font-semibold">Telkom Infra</span></div>
+              <div class="flex gap-2"><span class="text-slate-400 w-32">Position</span><span class="font-semibold">Project Admin</span></div>
+              <div class="flex gap-2"><span class="text-slate-400 w-24">Month / Year</span><span class="font-semibold">Juli 2026</span></div>
+              <div class="flex gap-2"><span class="text-slate-400 w-32">Project</span><span class="font-semibold">Telkominfra</span></div>
+            </div>
+          </div>
+
+          <!-- INPUT TIMESHEET -->
+          <div class="card p-4">
+            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <div class="flex items-center gap-2">
+                <span class="badge-num">1</span>
+                <span class="text-sm font-bold">Input Timesheet</span>
+              </div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <button class="btn btn-blue" id="btnTambahBaris"><i data-lucide="plus" class="w-3.5 h-3.5"></i>Tambah Baris</button>
+                <button class="btn btn-outline" id="btnCopyYesterday" style="color:var(--blue);"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Copy Yesterday</button>
+                <button class="btn btn-outline" id="btnRepeat" style="color:var(--green);"><i data-lucide="repeat" class="w-3.5 h-3.5"></i>Repeat</button>
+                <span class="w-px h-5 bg-slate-200 mx-1"></span>
+                <button class="btn btn-outline"><i data-lucide="upload" class="w-3.5 h-3.5"></i>Import dari Excel</button>
+                <button class="btn btn-blue" id="btnExport"><i data-lucide="download" class="w-3.5 h-3.5"></i>Export Excel</button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="ts">
+                <thead>
+                  <tr>
+                    <th><input type="checkbox" id="chkAll"></th><th>No</th><th>Date</th><th style="min-width:150px;">Project ID *</th><th>Project Name</th><th>Project Phase</th><th>Customer</th>
+                    <th style="min-width:230px;">Activity Description *</th><th style="min-width:120px;">Location *</th><th style="min-width:110px;">Billable Hours *</th><th>Mandays</th><th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="tsBody"></tbody>
+              </table>
+            </div>
+
+            <div class="flex items-center justify-between mt-3 pt-3" style="border-top:1px solid var(--border);">
+              <div class="flex items-center gap-2">
+                <button class="btn btn-outline text-[11px]" id="btnBulkEdit"><i data-lucide="list-checks" class="w-3.5 h-3.5"></i>Bulk Edit</button>
+                <button class="btn btn-outline text-[11px]" id="btnBulkDelete"><i data-lucide="trash-2" class="w-3.5 h-3.5" style="color:var(--red);"></i>Bulk Delete</button>
+              </div>
+              <div class="text-xs font-semibold">Total Mandays <span class="text-blue-600 ml-2 text-sm" id="totalMandays">5.0</span></div>
+            </div>
+
+            <div class="flex justify-end gap-2 mt-3">
+              <button class="btn btn-gray" id="btnSimpanDraft"><i data-lucide="save" class="w-3.5 h-3.5"></i>Simpan Draft</button>
+              <button class="btn btn-green" id="btnSubmit"><i data-lucide="send" class="w-3.5 h-3.5"></i>Submit ke Project Manager</button>
+            </div>
+          </div>
+
+          <!-- BOTTOM EXPLAIN STRIP -->
+          <div class="card mt-5 p-4 grid grid-cols-4 gap-4 text-xs" style="background:#FAFBFE;">
+            <div><div class="flex items-center gap-2 font-semibold mb-1"><span class="badge-num" style="background:var(--blue);">1</span>Form Input Timesheet</div><div class="text-slate-500 text-[11px]">Isi timesheet per hari dengan mudah. Auto suggestion Project ID & Activity.</div></div>
+            <div><div class="flex items-center gap-2 font-semibold mb-1"><span class="badge-num" style="background:var(--purple);">2</span>Fitur Pintar</div><div class="text-slate-500 text-[11px]">Copy Yesterday, Repeat, Auto Holiday, WFH, Manual Input, dan lainnya.</div></div>
+            <div><div class="flex items-center gap-2 font-semibold mb-1"><span class="badge-num" style="background:var(--amber);">3</span>Alur Approval</div><div class="text-slate-500 text-[11px]">Draft → Submit → Project Manager → Dept Head → Division Head → Approved.</div></div>
+            <div class="rounded-xl p-3" style="background:#E7F9EE;"><div class="flex items-center gap-2 font-semibold mb-1"><i data-lucide="file-spreadsheet" class="w-4 h-4" style="color:var(--green);"></i>Export Hasil</div><div class="text-slate-600 text-[11px]">Export Excel akan menghasilkan file sesuai template timesheet PT Integra.</div></div>
+          </div>
+        </div>
+
+        <!-- RIGHT PANEL -->
+        <div class="space-y-4">
+          <div class="card p-4">
+            <div class="text-sm font-bold mb-2">Status Pengisian Bulan Ini</div>
+            <div class="flex items-center gap-2 mb-1">
+              <div class="progress-track flex-1"><div class="h-full rounded-full" style="width:95%;background:linear-gradient(90deg,var(--green),var(--amber));"></div></div>
+              <span class="text-xs font-bold text-green-600">95%</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mb-3">21 dari 22 hari sudah diisi</div>
+            <div class="space-y-1.5 text-xs">
+              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:var(--green);"></span>Sudah Diisi<span class="ml-auto font-semibold">21</span></div>
+              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:var(--amber);"></span>Belum Diisi<span class="ml-auto font-semibold">1</span></div>
+              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-slate-300"></span>Hari Libur / Weekend<span class="ml-auto font-semibold">8</span></div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl p-4" style="background:#FEF9E7;border:1px solid #F5E6A8;">
+            <div class="flex items-center gap-2 text-sm font-bold mb-2" style="color:#92680B;"><i data-lucide="lightbulb" class="w-4 h-4"></i>Tips Cepat</div>
+            <ul class="text-[11.5px] space-y-1.5" style="color:#8A6A16;">
+              <li>• Gunakan Copy Yesterday untuk menyalin aktivitas kemarin</li>
+              <li>• Gunakan Repeat untuk mengisi beberapa hari sekaligus</li>
+              <li>• Pilih Project ID dari suggestion atau input manual</li>
+              <li>• Simpan draft sebelum submit ke atasan</li>
+            </ul>
+          </div>
+
+          <div class="card p-4">
+            <div class="text-sm font-bold mb-3">Shortcut & Bantuan</div>
+            <div class="space-y-3 text-xs">
+              <div class="flex items-start gap-2"><div class="icon-circle w-8 h-8 rounded-lg" style="background:#E9F0FE;"><i data-lucide="copy" class="w-4 h-4" style="color:var(--blue);"></i></div><div><div class="font-semibold">Copy Yesterday</div><div class="text-slate-400 text-[11px]">Salin data hari kemarin</div></div></div>
+              <div class="flex items-start gap-2"><div class="icon-circle w-8 h-8 rounded-lg" style="background:#E7F9EE;"><i data-lucide="repeat" class="w-4 h-4" style="color:var(--green);"></i></div><div><div class="font-semibold">Repeat</div><div class="text-slate-400 text-[11px]">Ulangi untuk beberapa hari</div></div></div>
+              <div class="flex items-start gap-2"><div class="icon-circle w-8 h-8 rounded-lg" style="background:#FEF2E3;"><i data-lucide="clock" class="w-4 h-4" style="color:var(--amber);"></i></div><div><div class="font-semibold">Hari Libur</div><div class="text-slate-400 text-[11px]">Akan otomatis terisi</div></div></div>
+              <div class="flex items-start gap-2"><div class="icon-circle w-8 h-8 rounded-lg" style="background:#F2ECFE;"><i data-lucide="home" class="w-4 h-4" style="color:var(--purple);"></i></div><div><div class="font-semibold">WFH</div><div class="text-slate-400 text-[11px]">Pilih lokasi WFH jika perlu</div></div></div>
+              <div class="flex items-start gap-2"><div class="icon-circle w-8 h-8 rounded-lg" style="background:#FDE8EA;"><i data-lucide="edit-3" class="w-4 h-4" style="color:var(--red);"></i></div><div><div class="font-semibold">Manual Input Project ID</div><div class="text-slate-400 text-[11px]">Input project ID manual</div></div></div>
+            </div>
+          </div>
+
+          <div class="card p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="text-sm font-bold">Riwayat Aktivitas</div>
+              <i data-lucide="history" class="w-4 h-4 text-slate-400"></i>
+            </div>
+            <div class="text-[10.5px] text-slate-400 mb-2" id="historyHint">Klik kolom Activity di baris, lalu pilih riwayat di bawah.</div>
+            <div class="flex flex-wrap gap-1.5" id="historyChips"></div>
+          </div>
+
+          <div class="card p-4">
+            <div class="text-sm font-bold mb-3">Alur Approval</div>
+            <div class="space-y-4 text-xs relative">
+              <div class="absolute left-[13px] top-2 bottom-2 w-px bg-slate-200"></div>
+              <div class="flex items-start gap-3 relative"><div class="step-dot">1</div><div><div class="font-semibold">Draft</div><div class="text-slate-400 text-[11px]">Simpan sebagai draft</div></div></div>
+              <div class="flex items-start gap-3 relative"><div class="step-dot" style="background:var(--purple);">2</div><div><div class="font-semibold">Submit</div><div class="text-slate-400 text-[11px]">Kirim ke Project Manager</div></div></div>
+              <div class="flex items-start gap-3 relative"><div class="step-dot" style="background:var(--amber);">3</div><div><div class="font-semibold">Project Manager</div><div class="text-slate-400 text-[11px]">Review & Approval</div></div></div>
+              <div class="flex items-start gap-3 relative"><div class="step-dot" style="background:#F97316;">4</div><div><div class="font-semibold">Dept Head</div><div class="text-slate-400 text-[11px]">Review & Approval</div></div></div>
+              <div class="flex items-start gap-3 relative"><div class="step-dot" style="background:var(--green);">5</div><div><div class="font-semibold">Division Head</div><div class="text-slate-400 text-[11px]">Final Approval</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    </main>
+  </div>
+</div>
+
+<script>
+lucide.createIcons();
+
+// ================= GOOGLE SHEETS CONFIG =================
+// Setelah deploy Code.gs sebagai Web App, tempel URL-nya di sini,
+// ATAU klik tombol "Sambungkan Google Sheets" di topbar (tersimpan
+// untuk sesi ini saja).
+let APPS_SCRIPT_URL = "";
+const CONSULTANT_NAME = "Devry Rizkie H";
+const CURRENT_MONTH = "2026-07";
+let usageFrequency = {}; // Project ID -> berapa kali dipakai (untuk Favorite Project)
+let activityHistory = []; // daftar activity unik yang pernah dipakai, terbaru duluan
+let activeRowIdx = null; // baris Activity yang sedang fokus (untuk Riwayat Aktivitas)
+
+document.getElementById('btnConnectSheet').addEventListener('click', async ()=>{
+  const url = prompt('Tempel Web App URL dari Google Apps Script (Code.gs) kamu:', APPS_SCRIPT_URL || 'https://script.google.com/macros/s/XXXXXXXX/exec');
+  if(!url) return;
+  APPS_SCRIPT_URL = url.trim();
+  document.getElementById('connStatus').textContent = 'Menghubungkan...';
+  await loadFromSheets();
+});
+
+async function loadFromSheets(){
+  if(!APPS_SCRIPT_URL){ return; }
+  const statusEl = document.getElementById('connStatus');
+  try{
+    const [mp, ma, ml, ts] = await Promise.all([
+      fetch(`${APPS_SCRIPT_URL}?action=getMasterProject`).then(r=>r.json()),
+      fetch(`${APPS_SCRIPT_URL}?action=getMasterActivity`).then(r=>r.json()),
+      fetch(`${APPS_SCRIPT_URL}?action=getMasterLocation`).then(r=>r.json()),
+      fetch(`${APPS_SCRIPT_URL}?action=getTimesheet&consultant=${encodeURIComponent(CONSULTANT_NAME)}&month=${CURRENT_MONTH}`).then(r=>r.json()),
+    ]);
+
+    if(Array.isArray(mp) && mp.length){
+      Object.keys(PROJECTS).forEach(k=>delete PROJECTS[k]);
+      mp.forEach(row=>{ if(row.ProjectID) PROJECTS[row.ProjectID] = {name:row.ProjectName, customer:row.Customer, phase:row.Phase}; });
+    }
+    if(Array.isArray(ma) && ma.length){
+      ACTIVITIES.length = 0;
+      ma.forEach(row=>{ if(row.Activity) ACTIVITIES.push(row.Activity); });
+    }
+    if(Array.isArray(ml) && ml.length){
+      LOCATIONS.length = 0;
+      ml.forEach(row=>{ if(row.Location) LOCATIONS.push(row.Location); });
+    }
+    if(Array.isArray(ts)){
+      applySheetTimesheet(ts);
+    }
+
+    statusEl.textContent = 'Terhubung ✓';
+    document.getElementById('btnConnectSheet').style.background = '#E7F9EE';
+    document.getElementById('btnConnectSheet').style.color = '#15803D';
+    document.getElementById('btnConnectSheet').style.borderColor = '#BBF0CE';
+    render();
+  }catch(err){
+    statusEl.textContent = 'Gagal konek — cek URL';
+    console.error(err);
+  }
+}
+
+function applySheetTimesheet(ts){
+  ts.forEach(entry=>{
+    const row = rowState.find(r=>r.date === entry.Date || matchDateLoose(r.date, entry.Date));
+    if(row && !row.holiday){
+      row.pid = entry.ProjectID || row.pid;
+      row.activity = entry.Activity || row.activity;
+      row.location = entry.Location || row.location;
+      row.hours = entry.Hours || row.hours;
+      row.mandays = entry.Mandays || 1.0;
+      row.filled = !!entry.ProjectID;
+      row.status = entry.Status || 'Draft';
+    }
+    if(entry.ProjectID) trackUsage(entry.ProjectID, entry.Activity);
+  });
+}
+function matchDateLoose(a,b){ return String(a).trim()===String(b).trim(); }
+
+function trackUsage(pid, activity){
+  if(pid){ usageFrequency[pid] = (usageFrequency[pid]||0) + 1; }
+  if(activity){
+    activityHistory = activityHistory.filter(a=>a!==activity);
+    activityHistory.unshift(activity);
+    activityHistory = activityHistory.slice(0,8);
+  }
+  renderHistoryChips();
+}
+
+function renderHistoryChips(){
+  const box = document.getElementById('historyChips');
+  if(!box) return;
+  if(activityHistory.length===0){
+    box.innerHTML = '<span class="text-[11px] text-slate-300">Belum ada riwayat.</span>';
+    return;
+  }
+  box.innerHTML = activityHistory.map((a,i)=>`<button class="hist-chip" data-i="${i}" style="font-size:10.5px;padding:4px 8px;border-radius:999px;background:#F2F6FF;color:#3B82F6;border:1px solid #DCE8FF;">${a.length>28?a.slice(0,28)+'…':a}</button>`).join('');
+  box.querySelectorAll('.hist-chip').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(activeRowIdx===null){ alert('Klik dulu kolom Activity pada baris yang mau diisi.'); return; }
+      const val = activityHistory[+btn.dataset.i];
+      rowState[activeRowIdx].activity = val;
+      render();
+    });
+  });
+}
+
+document.getElementById('menuTimesheet').addEventListener('click', ()=>{
+  const sm = document.getElementById('submenuTimesheet');
+  sm.style.display = sm.style.display==='none' ? 'block' : 'none';
+});
+
+// ---------- MASTER DATA ----------
+const PROJECTS = {
+  "T01AMS41426 - BAR039": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation"},
+  "T01AMS41426 - BAR047": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation"},
+  "T01AMS41426 - BAR049": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation"},
+  "T01AMS41426 - BAO232": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation"},
+  "T01AMS41426 - GTO161": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation"},
+  "T01AMS41426 - KDI270": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation"},
+};
+const ACTIVITIES = [
+  "Monitoring Progress, collect data supply BAUT, submit PRIMA, communicate with FICO",
+  "Review BAUT","Review BAPP","Review BAST","Invoice","Vendor Registration","Meeting","Training"
+];
+const LOCATIONS = ["The Prasada","WFH","Client Office","Regional Office"];
+const ACTIVITY_FULL = "Monitoring Progress, collect data supply for BAUT from Mitra, escalate the dependency document online, input, submit document to PRIMA, FU (BAUT, BAPP, BAST, Invoicing) communicate with FICO, Regional TI.- Create &";
+
+// seed rows: [date, day, projectId or null, isHoliday, filled]
+let rowState = [
+  {date:"16 Jul 2026", day:"Kamis", pid:"T01AMS41426 - BAR039", activity:ACTIVITY_FULL, location:"The Prasada", hours:"08:30 - 17:30", mandays:1.0, holiday:false, filled:true},
+  {date:"17 Jul 2026", day:"Jumat", pid:"T01AMS41426 - BAR047", activity:ACTIVITY_FULL, location:"The Prasada", hours:"08:30 - 17:30", mandays:1.0, holiday:false, filled:true},
+  {date:"18 Jul 2026", day:"Sabtu", pid:null, activity:null, location:"The Prasada", hours:"08:30 - 17:30", mandays:1.0, holiday:true, filled:true},
+  {date:"19 Jul 2026", day:"Minggu", pid:null, activity:null, location:"The Prasada", hours:"08:30 - 17:30", mandays:1.0, holiday:true, filled:true},
+  {date:"20 Jul 2026", day:"Senin", pid:null, activity:null, location:null, hours:null, mandays:0, holiday:false, filled:false},
+  {date:"21 Jul 2026", day:"Selasa", pid:null, activity:null, location:null, hours:null, mandays:0, holiday:false, filled:false},
+  {date:"22 Jul 2026", day:"Rabu", pid:null, activity:null, location:null, hours:null, mandays:0, holiday:false, filled:false},
+  {date:"23 Jul 2026", day:"Kamis", pid:null, activity:null, location:null, hours:null, mandays:0, holiday:false, filled:false},
+];
+
+const tsBody = document.getElementById('tsBody');
+
+function closeSuggests(){ document.querySelectorAll('.suggest').forEach(e=>e.remove()); }
+document.addEventListener('click', (e)=>{ if(!e.target.closest('.suggest') && !e.target.classList.contains('pid-input') && !e.target.classList.contains('act-input')) closeSuggests(); });
+
+function render(){
+  tsBody.innerHTML = "";
+  rowState.forEach((r, idx)=>{
+    const tr = document.createElement('tr');
+    if(r.holiday) tr.classList.add('holiday');
+
+    if(r.holiday){
+      tr.innerHTML = `
+        <td><input type="checkbox" class="rowChk"></td>
+        <td>${idx+1}</td>
+        <td class="datecell">${r.date}<br><span class="text-[10px]">${r.day}</span></td>
+        <td>-</td><td>-</td><td>-</td><td>-</td>
+        <td>Hari Libur</td><td>${r.location||'-'}</td><td>${r.hours||'-'}</td><td>${r.day}</td>
+        <td><i data-lucide="minus" class="w-3.5 h-3.5 text-slate-300"></i></td>`;
+    } else if(r.filled){
+      const p = PROJECTS[r.pid] || {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation"};
+      tr.innerHTML = `
+        <td><input type="checkbox" class="rowChk"></td>
+        <td>${idx+1}</td>
+        <td>${r.date}<br><span class="text-[10px] text-slate-400">${r.day}</span></td>
+        <td><select class="pidSelect" data-idx="${idx}">${Object.keys(PROJECTS).map(k=>`<option ${k===r.pid?'selected':''}>${k}</option>`).join('')}</select></td>
+        <td>${p.name}</td><td>${p.phase}</td><td>${p.customer}</td>
+        <td class="text-[11.5px]">${r.activity}</td>
+        <td>${r.location}</td><td>${r.hours}</td><td>${r.day}</td>
+        <td class="flex gap-2"><i data-lucide="copy" class="w-3.5 h-3.5 cursor-pointer text-blue-500 copyRow" data-idx="${idx}"></i><i data-lucide="trash-2" class="w-3.5 h-3.5 cursor-pointer text-red-500 delRow" data-idx="${idx}"></i></td>`;
+    } else {
+      tr.innerHTML = `
+        <td><input type="checkbox" class="rowChk"></td>
+        <td>${idx+1}</td>
+        <td>${r.date}<br><span class="text-[10px] text-slate-400">${r.day}</span></td>
+        <td class="relative"><input class="pid-input" data-idx="${idx}" placeholder="T01AMS..." autocomplete="off"></td>
+        <td class="text-slate-300">-</td><td class="text-slate-300">-</td><td class="text-slate-300">-</td>
+        <td class="relative">
+          <input class="act-input" data-idx="${idx}" value="${r.activity||''}" placeholder="Ketik atau pilih aktivitas..." autocomplete="off">
+          ${r.aiSuggest ? `<div class="ai-suggest-banner" data-idx="${idx}" style="margin-top:4px;background:#FEF9E7;border:1px solid #F5E6A8;border-radius:6px;padding:5px 8px;font-size:10.5px;color:#8A6A16;display:flex;align-items:center;justify-content:space-between;gap:6px;"><span>Gunakan aktivitas kemarin?</span><button class="aiYesBtn" data-idx="${idx}" style="background:#F59E0B;color:#fff;border-radius:5px;padding:2px 8px;font-weight:700;">Ya</button></div>` : ''}
+        </td>
+        <td><select class="locSelect" data-idx="${idx}"><option value="">Pilih lokasi</option>${LOCATIONS.map(l=>`<option>${l}</option>`).join('')}</select></td>
+        <td><input placeholder="--:-- - --:--" class="hoursInput" data-idx="${idx}"></td>
+        <td>${r.day}</td>
+        <td><button class="addRowBtn text-green-500" data-idx="${idx}"><i data-lucide="plus-circle" class="w-4 h-4"></i></button></td>`;
+    }
+    tsBody.appendChild(tr);
+  });
+  lucide.createIcons();
+  attachHandlers();
+  updateTotals();
+}
+
+function attachHandlers(){
+  document.querySelectorAll('.pidSelect').forEach(sel=>{
+    sel.addEventListener('change', e=>{ rowState[+e.target.dataset.idx].pid = e.target.value; render(); });
+  });
+  document.querySelectorAll('.copyRow').forEach(el=>{
+    el.addEventListener('click', e=>{
+      const idx = +e.currentTarget.dataset.idx;
+      const src = rowState[idx];
+      const next = rowState.find((r,i)=>i>idx && !r.holiday && !r.filled);
+      if(next){ Object.assign(next, {pid:src.pid, activity:src.activity, location:src.location, hours:src.hours, mandays:1.0, filled:true}); render(); }
+    });
+  });
+  document.querySelectorAll('.delRow').forEach(el=>{
+    el.addEventListener('click', e=>{
+      const idx = +e.currentTarget.dataset.idx;
+      Object.assign(rowState[idx], {pid:null, activity:null, location:null, hours:null, mandays:0, filled:false});
+      render();
+    });
+  });
+  document.querySelectorAll('.locSelect').forEach(sel=>{
+    sel.addEventListener('change', e=>{ /* stays in edit mode until Project ID picked */ });
+  });
+
+  document.querySelectorAll('.pid-input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      closeSuggests();
+      const val = e.target.value.trim().toUpperCase();
+      if(!val) return;
+      let matches = Object.keys(PROJECTS).filter(k=>k.toUpperCase().includes(val));
+      if(matches.length===0) return;
+      // Favorite Project: yang paling sering dipakai naik ke atas
+      matches.sort((a,b)=>(usageFrequency[b]||0)-(usageFrequency[a]||0));
+      const box = document.createElement('div');
+      box.className='suggest';
+      const rect = e.target.getBoundingClientRect();
+      box.style.left = rect.left+'px'; box.style.top=(rect.bottom+window.scrollY+4)+'px'; box.style.position='fixed';
+      matches.forEach((m,mi)=>{
+        const d=document.createElement('div');
+        const isFav = usageFrequency[m] >= 2;
+        d.innerHTML = m.split(' - ')[1] + (isFav ? ' <span style="color:#F59E0B;font-size:10px;">★ Favorit</span>' : '');
+        d.addEventListener('click', ()=>{
+          const idx = +e.target.dataset.idx;
+          rowState[idx].pid = m; rowState[idx].filled = true;
+          if(!rowState[idx].mandays) rowState[idx].mandays = 1.0;
+          checkAiSuggestion(idx);
+          render();
+        });
+        box.appendChild(d);
+      });
+      document.body.appendChild(box);
+    });
+  });
+
+  document.querySelectorAll('.act-input').forEach(inp=>{
+    inp.addEventListener('focus', e=>{ activeRowIdx = +e.target.dataset.idx; });
+    inp.addEventListener('input', e=>{
+      closeSuggests();
+      rowState[+e.target.dataset.idx].activity = e.target.value;
+      const val = e.target.value.trim().toLowerCase();
+      if(!val) return;
+      const matches = ACTIVITIES.filter(a=>a.toLowerCase().includes(val));
+      if(matches.length===0) return;
+      const box = document.createElement('div');
+      box.className='suggest'; box.style.width='320px';
+      const rect = e.target.getBoundingClientRect();
+      box.style.left = rect.left+'px'; box.style.top=(rect.bottom+window.scrollY+4)+'px'; box.style.position='fixed';
+      matches.forEach(m=>{
+        const d=document.createElement('div'); d.textContent=m; d.style.whiteSpace='normal';
+        d.addEventListener('click', ()=>{
+          const idx = +e.target.dataset.idx;
+          rowState[idx].activity = m;
+          e.target.value = m;
+          trackUsage(null, m);
+          closeSuggests();
+        });
+        box.appendChild(d);
+      });
+      document.body.appendChild(box);
+    });
+  });
+
+  document.querySelectorAll('.hoursInput').forEach(inp=>{
+    inp.addEventListener('change', e=>{ rowState[+e.target.dataset.idx].hours = e.target.value; });
+  });
+
+  document.querySelectorAll('.aiYesBtn').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const idx = +e.currentTarget.dataset.idx;
+      const prev = rowState[idx-1];
+      if(prev){
+        rowState[idx].activity = prev.activity;
+        rowState[idx].location = prev.location || 'The Prasada';
+        rowState[idx].hours = prev.hours || '08:30 - 17:30';
+      }
+      rowState[idx].aiSuggest = false;
+      render();
+    });
+  });
+
+  document.querySelectorAll('.addRowBtn').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const idx = +e.currentTarget.dataset.idx;
+      const r = rowState[idx];
+      if(!r.pid){ alert('Pilih Project ID terlebih dahulu'); return; }
+      r.location = r.location || 'The Prasada';
+      r.hours = r.hours || '08:30 - 17:30';
+      r.mandays = 1.0; r.filled = true;
+      trackUsage(r.pid, r.activity);
+      render();
+    });
+  });
+}
+
+// AI Suggestion: kalau Project ID baris ini sama dengan baris (non-libur) sebelumnya
+// dan Activity-nya masih kosong, tampilkan banner "Gunakan aktivitas kemarin?"
+function checkAiSuggestion(idx){
+  const cur = rowState[idx];
+  const prev = rowState[idx-1];
+  if(prev && !prev.holiday && prev.pid === cur.pid && !cur.activity){
+    cur.aiSuggest = true;
+  }
+}
+
+function updateTotals(){
+  const total = rowState.reduce((s,r)=>s+(r.mandays||0),0);
+  document.getElementById('totalMandays').textContent = total.toFixed(1);
+}
+
+render();
+renderHistoryChips();
+
+// ---------- TOOLBAR ACTIONS ----------
+document.getElementById('btnTambahBaris').addEventListener('click', ()=>{
+  const last = rowState[rowState.length-1];
+  rowState.push({date:"+1 hari", day:"", pid:null, activity:null, location:null, hours:null, mandays:0, holiday:false, filled:false});
+  render();
+});
+
+document.getElementById('btnCopyYesterday').addEventListener('click', ()=>{
+  const lastFilled = [...rowState].reverse().find(r=>r.filled && !r.holiday);
+  const target = rowState.find(r=>!r.filled && !r.holiday);
+  if(lastFilled && target){
+    Object.assign(target, {pid:lastFilled.pid, activity:lastFilled.activity, location:lastFilled.location, hours:lastFilled.hours, mandays:1.0, filled:true});
+    render();
+  } else { alert('Tidak ada baris kosong untuk diisi.'); }
+});
+
+document.getElementById('btnRepeat').addEventListener('click', ()=>{
+  const n = prompt('Ulangi entry terakhir untuk berapa hari ke depan?','3');
+  const count = parseInt(n);
+  if(!count) return;
+  const lastFilled = [...rowState].reverse().find(r=>r.filled && !r.holiday);
+  if(!lastFilled) return;
+  let applied = 0;
+  for(const r of rowState){
+    if(applied>=count) break;
+    if(!r.filled && !r.holiday){
+      Object.assign(r, {pid:lastFilled.pid, activity:lastFilled.activity, location:lastFilled.location, hours:lastFilled.hours, mandays:1.0, filled:true});
+      applied++;
+    }
+  }
+  render();
+});
+
+document.getElementById('btnBulkEdit').addEventListener('click', ()=>{
+  const checked = [...document.querySelectorAll('.rowChk')].map((c,i)=>c.checked?i:-1).filter(i=>i>=0);
+  if(checked.length===0){ alert('Centang minimal 1 baris untuk Bulk Edit.'); return; }
+  const loc = prompt('Ubah Location untuk baris terpilih menjadi:', 'WFH');
+  if(!loc) return;
+  checked.forEach(i=>{ if(rowState[i].filled) rowState[i].location = loc; });
+  render();
+});
+
+document.getElementById('btnBulkDelete').addEventListener('click', ()=>{
+  const checked = [...document.querySelectorAll('.rowChk')].map((c,i)=>c.checked?i:-1).filter(i=>i>=0);
+  checked.forEach(i=>{ if(!rowState[i].holiday) Object.assign(rowState[i], {pid:null, activity:null, location:null, hours:null, mandays:0, filled:false}); });
+  render();
+});
+
+document.getElementById('chkAll').addEventListener('change', e=>{
+  document.querySelectorAll('.rowChk').forEach(c=>c.checked = e.target.checked);
+});
+
+// ---------- EXPORT TO XLSX (identik template PT Integra) ----------
+async function exportTimesheet(){
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Timesheet');
+  ws.columns = [{width:5},{width:14},{width:20},{width:14},{width:16},{width:14},{width:70},{width:14},{width:14},{width:12}];
+
+  ws.mergeCells('A1:C1');
+  ws.getCell('A1').value = 'TIMESHEET';
+  ws.getCell('A1').font = {bold:true, size:16};
+
+  const info = [['Consultant Name','Devry Rizkie H'],['Position','Project Admin'],['Project','Telkominfra'],['Month / Year','Juli 2026']];
+  info.forEach((pair,i)=>{
+    const r=i+2;
+    ws.getCell(`A${r}`).value = pair[0]; ws.getCell(`A${r}`).font = {bold:true};
+    ws.mergeCells(`B${r}:C${r}`); ws.getCell(`B${r}`).value = pair[1];
+  });
+
+  const headerRowIdx = 7;
+  const headers = ['No','Date','Project ID','Project Name','Project Phase','Customer','Activity Description\n(to be completed by consultant)','Location','Billable Hours','Mandays'];
+  const hRow = ws.getRow(headerRowIdx);
+  headers.forEach((h,i)=>{ hRow.getCell(i+1).value = h; });
+  hRow.eachCell(cell=>{
+    cell.font = {bold:true, color:{argb:'FFFFFFFF'}};
+    cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FF1F4E9C'}};
+    cell.alignment = {vertical:'middle', horizontal:'center', wrapText:true};
+    cell.border = {top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}};
+  });
+  hRow.height = 30;
+
+  rowState.forEach((r, idx)=>{
+    const rowIdx = headerRowIdx + 1 + idx;
+    const row = ws.getRow(rowIdx);
+    const p = r.pid ? (PROJECTS[r.pid]||{name:"Telkominfra",customer:"Telkom Infra",phase:"Implementation"}) : {name:"-",customer:"-",phase:"-"};
+    const vals = r.holiday
+      ? [idx+1, r.date, '-', '-', '-', '-', 'Hari Libur', '-', '-', r.day]
+      : [idx+1, r.date, r.pid||'-', p.name, p.phase, p.customer, r.activity||'-', r.location||'-', r.hours||'-', r.day];
+    vals.forEach((v,i)=>{ row.getCell(i+1).value = v; });
+    row.eachCell(cell=>{
+      cell.border = {top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}};
+      cell.alignment = {vertical:'top', wrapText:true};
+      if(r.holiday) cell.font = {italic:true, color:{argb:'FF888888'}};
+    });
+    if(idx % 2 === 1 && !r.holiday){
+      row.eachCell(cell=>{ cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFDCE6F5'}}; });
+    }
+  });
+
+  let legendStart = headerRowIdx + rowState.length + 2;
+  const legend = [
+    ['Others - Project ID','Description','','Others - Project ID','Description'],
+    ['Holiday','Sabtu/Minggu, Libur (Kalender)','','Internal Meeting','Internal meeting, coordination, project preparation'],
+    ['Sick Leave','Izin Sakit','','External Meeting','Presentation, meeting w/ external'],
+    ['Permission Leave','Cuti/Izin','','Timesheet','Timesheet record & Submit'],
+    ['Idle','Idle/No Client','','Learning/Training','Self Learning & Development'],
+    ['NONA','No news in attendance','','Standby Support','Standby customer support'],
+  ];
+  legend.forEach((r,i)=>{
+    const rowIdx = legendStart+i;
+    r.forEach((v,ci)=>{ ws.getCell(rowIdx, ci+1).value = v; });
+    if(i===0){
+      ws.getRow(rowIdx).eachCell(cell=>{
+        if(cell.value){ cell.font={bold:true,color:{argb:'FFFFFFFF'}}; cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE8A33D'}}; }
+      });
+    }
+  });
+
+  let sigStart = legendStart + legend.length + 3;
+  const sigHeaders = ['Prepare By','Proposed by,','Approved by,','Approved by,'];
+  const sigNames = ['Devry Rizkie H','Jodie Satria Effendi','Wisnu Hendra Pratama','Agus Triyanto'];
+  const sigTitles = ['','Project Manager','TIS Delivery Dept Head','Division Head'];
+  sigHeaders.forEach((h,i)=>{
+    ws.getCell(sigStart, i*2+1).value = h; ws.getCell(sigStart, i*2+1).font = {bold:true};
+    ws.getCell(sigStart+4, i*2+1).value = sigNames[i]; ws.getCell(sigStart+4, i*2+1).font = {bold:true};
+    ws.getCell(sigStart+5, i*2+1).value = sigTitles[i];
+  });
+
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], {type:'application/octet-stream'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'Timesheet_DevryRizkieH_July2026.xlsx';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+document.getElementById('btnExport').addEventListener('click', exportTimesheet);
+
+// ---------- SIMPAN DRAFT / SUBMIT ke Google Sheets ----------
+function buildTimesheetPayload(status){
+  return rowState.filter(r=>r.filled || r.holiday).map(r=>{
+    const p = r.pid ? (PROJECTS[r.pid]||{name:'Telkominfra',customer:'Telkom Infra',phase:'Implementation'}) : {name:'-',customer:'-',phase:'-'};
+    return {
+      Date: r.date, Day: r.day, ConsultantName: CONSULTANT_NAME,
+      ProjectID: r.holiday ? '' : (r.pid||''),
+      ProjectName: r.holiday ? '' : p.name,
+      Phase: r.holiday ? '' : p.phase,
+      Customer: r.holiday ? '' : p.customer,
+      Activity: r.holiday ? 'Hari Libur' : (r.activity||''),
+      Location: r.location||'', Hours: r.hours||'', Mandays: r.mandays||0,
+      Holiday: r.holiday ? 'Yes' : 'No', Status: status
+    };
+  });
+}
+
+async function saveToSheets(status){
+  if(!APPS_SCRIPT_URL){
+    alert('Belum tersambung ke Google Sheets. Klik "Sambungkan Google Sheets" di kanan atas dulu.\n\n(Untuk sekarang, perubahan status "'+status+'" hanya berlaku di tampilan ini.)');
+    return;
+  }
+  const rows = buildTimesheetPayload(status);
+  try{
+    await fetch(APPS_SCRIPT_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'}, // hindari CORS preflight
+      body: JSON.stringify({action:'saveTimesheet', rows})
+    });
+    if(status==='Submitted'){
+      await fetch(APPS_SCRIPT_URL, {
+        method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'submitTimesheet', consultant:CONSULTANT_NAME, month:CURRENT_MONTH, status:'Submitted'})
+      });
+    }
+    alert(status==='Draft' ? 'Draft tersimpan ke Google Sheets.' : 'Timesheet berhasil di-submit ke Project Manager.');
+  }catch(err){
+    console.error(err);
+    alert('Gagal menyimpan ke Google Sheets. Cek koneksi / URL Apps Script.');
+  }
+}
+
+document.getElementById('btnSimpanDraft').addEventListener('click', ()=>saveToSheets('Draft'));
+document.getElementById('btnSubmit').addEventListener('click', ()=>saveToSheets('Submitted'));
+</script>
+</body>
+</html>
