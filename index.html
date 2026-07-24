@@ -279,7 +279,7 @@ lucide.createIcons();
 // Setelah deploy Code.gs sebagai Web App, tempel URL-nya di sini,
 // ATAU klik tombol "Sambungkan Google Sheets" di topbar (tersimpan
 // untuk sesi ini saja).
-let APPS_SCRIPT_URL = "";
+let APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx35rOsqXd3Jtp5kys0u-txNLL9vx1kOPQD10pKAAKgtm_wJddqu_3g2cvLbpMsb_mJhg/exec";
 const CONSULTANT_NAME = "Devry Rizkie H";
 const CURRENT_MONTH = "2026-07";
 let usageFrequency = {}; // Project ID -> berapa kali dipakai (untuk Favorite Project)
@@ -293,6 +293,14 @@ document.getElementById('btnConnectSheet').addEventListener('click', async ()=>{
   document.getElementById('connStatus').textContent = 'Menghubungkan...';
   await loadFromSheets();
 });
+
+// Auto-connect saat halaman dibuka, karena URL sudah di-hardcode di atas.
+if(APPS_SCRIPT_URL){
+  document.getElementById('connStatus').textContent = 'Menghubungkan...';
+  window.addEventListener('DOMContentLoaded', loadFromSheets);
+  // fallback in case DOMContentLoaded already fired by the time this runs
+  if(document.readyState !== 'loading') loadFromSheets();
+}
 
 async function loadFromSheets(){
   if(!APPS_SCRIPT_URL){ return; }
