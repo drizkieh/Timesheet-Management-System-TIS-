@@ -499,23 +499,22 @@ async function loadFromSheets(){
 }
 
 function applySheetTimesheet(ts){
-  // Reset dulu semua sheetRowId & filled (non-holiday) sebelum apply dari Sheets
+  // Reset semua baris non-holiday dulu biar tidak ada sisa data lama
   rowState.forEach(r=>{ if(!r.holiday){ r.sheetRowId=null; r.filled=false; r.pid=null; r.activity=null; r.location=null; r.hours=null; r.mandays=0; } });
-
   ts.forEach(entry=>{
     if(!entry.Date) return;
-    // Cari baris berdasarkan RowID dulu, fallback ke tanggal
+    // Cari berdasarkan RowID dulu, fallback ke tanggal
     let row = entry.RowID ? rowState.find(r=>r.sheetRowId===entry.RowID) : null;
     if(!row) row = rowState.find(r=>matchDateLoose(r.date, entry.Date));
     if(row && !row.holiday){
-      row.pid      = entry.ProjectID || '';
-      row.activity = entry.Activity  || '';
-      row.location = entry.Location  || '';
-      row.hours    = entry.Hours     || '';
-      row.mandays  = parseFloat(entry.Mandays) || 1.0;
-      row.filled   = !!entry.ProjectID;
-      row.status   = entry.Status || 'Draft';
-      row.sheetRowId = entry.RowID || null;
+      row.pid        = entry.ProjectID || '';
+      row.activity   = entry.Activity  || '';
+      row.location   = entry.Location  || '';
+      row.hours      = entry.Hours     || '';
+      row.mandays    = parseFloat(entry.Mandays) || 1.0;
+      row.filled     = !!entry.ProjectID;
+      row.status     = entry.Status    || 'Draft';
+      row.sheetRowId = entry.RowID     || null;
     }
     if(entry.ProjectID) trackUsage(entry.ProjectID, entry.Activity);
   });
@@ -580,30 +579,25 @@ const LOCATIONS = ["The Prasada","WFH","Client Office","Regional Office"];
 const HOURS_PRESETS = ["08:30 - 17:30","08:00 - 17:00","09:00 - 18:00","08:30 - 12:30"];
 const ACTIVITY_FULL = "Monitoring Progress, collect data supply for BAUT from Mitra, escalate the dependency document online, input, submit document to PRIMA, FU (BAUT, BAPP, BAST, Invoicing) communicate with FICO, Regional TI.- Create &";
 
-// rowState dibangun dari tanggal bulan berjalan, kosong sampai data dari Sheets masuk
-const WEEKEND_DAYS = ['Minggu','Sabtu'];
-const MONTH_NAMES_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-const DAY_NAMES_ID = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-
-function buildEmptyRowState(yearMonth){ // "2026-07"
+// Bangun rowState dari semua tanggal bulan berjalan — kosong, nunggu data dari Sheets
+const _MONTH_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const _DAY_ID   = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const _WEEKEND  = ['Sabtu','Minggu'];
+function buildEmptyRowState(yearMonth){
   const [y,m] = yearMonth.split('-').map(Number);
-  const daysInMonth = new Date(y, m, 0).getDate();
-  const rows = [];
-  for(let d=1; d<=daysInMonth; d++){
-    const dt = new Date(y, m-1, d);
-    const dayName = DAY_NAMES_ID[dt.getDay()];
-    const dateStr = `${d} ${MONTH_NAMES_ID[m-1].slice(0,3)} ${y}`;
-    rows.push({
-      date: dateStr, day: dayName,
+  const total  = new Date(y, m, 0).getDate();
+  const rows   = [];
+  for(let d=1; d<=total; d++){
+    const dt      = new Date(y, m-1, d);
+    const dayName = _DAY_ID[dt.getDay()];
+    const dateStr = `${d} ${_MONTH_ID[m-1].slice(0,3)} ${y}`;
+    const isWeekend = _WEEKEND.includes(dayName);
+    rows.push({ date:dateStr, day:dayName,
       pid:null, activity:null, location:null, hours:null, mandays:0,
-      holiday: WEEKEND_DAYS.includes(dayName),
-      filled: WEEKEND_DAYS.includes(dayName),
-      sheetRowId: null
-    });
+      holiday:isWeekend, filled:isWeekend, sheetRowId:null });
   }
   return rows;
 }
-
 let rowState = buildEmptyRowState(CURRENT_MONTH);
 
 document.getElementById('kpiTotalProject').textContent = Object.keys(PROJECTS).length;
@@ -1094,7 +1088,7 @@ function buildTimesheetPayload(status){
   return rowState.filter(r=>r.filled||r.holiday).map(r=>{
     const p=r.pid?(PROJECTS[r.pid]||{name:'Telkominfra',customer:'Telkom Infra',phase:'Implementation'}):{name:'-',customer:'-',phase:'-'};
     return {
-      RowID: r.sheetRowId || '',          // kirim RowID yang ada; kosong = baris baru
+      RowID:r.sheetRowId||'',          // kirim RowID yg ada; kosong = baris baru
       Date:r.date, Day:r.day, ConsultantName:CONSULTANT_NAME,
       ProjectID:r.holiday?'':(r.pid||''),
       ProjectName:r.holiday?'':p.name,
@@ -1108,38 +1102,20 @@ function buildTimesheetPayload(status){
 }
 
 async function saveToSheets(status){
-  if(!APPS_SCRIPT_URL){
-    showToast('Belum tersambung ke Google Sheets.','err');
-    return;
-  }
-  const rows=buildTimesheetPayload(status);
+  if(!APPS_SCRIPT_URL){ showToast('Belum tersambung ke Google Sheets.','err'); return; }
+  const rows = buildTimesheetPayload(status);
   try{
-    const res = await fetch(APPS_SCRIPT_URL,{
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify({action:'saveTimesheet', rows})
-    });
+    const res  = await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'saveTimesheet',rows})});
     const data = await res.json();
-
-    // Jika backend kembalikan rowIds, update sheetRowId di rowState
+    // Simpan rowIds yang dikembalikan backend ke rowState
     if(data.rowIds && Array.isArray(data.rowIds)){
-      let ridx = 0;
-      rowState.forEach(r=>{
-        if((r.filled||r.holiday) && ridx < data.rowIds.length){
-          r.sheetRowId = data.rowIds[ridx++] || r.sheetRowId;
-        }
-      });
+      let ri=0;
+      rowState.forEach(r=>{ if((r.filled||r.holiday) && ri<data.rowIds.length){ r.sheetRowId=data.rowIds[ri++]||r.sheetRowId; } });
     }
-
     if(status==='Submitted'){
-      await fetch(APPS_SCRIPT_URL,{
-        method:'POST',
-        headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body:JSON.stringify({action:'submitTimesheet',consultant:CONSULTANT_NAME,month:CURRENT_MONTH,status:'Submitted'})
-      });
+      await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'submitTimesheet',consultant:CONSULTANT_NAME,month:CURRENT_MONTH,status:'Submitted'})});
     }
     showToast(status==='Draft'?'Draft tersimpan ke Google Sheets.':'Timesheet berhasil di-submit ke Project Manager.','ok');
-
     // Reload dari Sheets untuk konfirmasi data benar-benar sama
     await loadFromSheets();
   }catch(err){
