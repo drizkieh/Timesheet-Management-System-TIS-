@@ -600,6 +600,7 @@ lucide.createIcons();
 let APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhipIs-9yF4QsXJf7wPwdJgTd2rAbV8iKwSh4C9LtJgNyBLEY2Aakn7br7twLJA43BTA/exec";
 let CONSULTANT_NAME = "";
 let CURRENT_USER    = null;
+let CURRENT_MONTH   = (()=>{ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); })();
 // =========================================================
 // SESSION
 // =========================================================
