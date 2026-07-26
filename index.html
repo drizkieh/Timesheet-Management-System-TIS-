@@ -770,54 +770,6 @@ async function loadFromSheets(){
   }
 }
 
-    if(Array.isArray(mp) && mp.length){
-      Object.keys(PROJECTS).forEach(k=>delete PROJECTS[k]);
-      // Log raw keys dari sheet pertama untuk debug
-      if(mp[0]) console.log('[MasterProject] Kolom dari Sheets:', Object.keys(mp[0]));
-      mp.forEach(row=>{
-        if(!row.ProjectID) return;
-        // Coba berbagai kemungkinan nama kolom Site ID dari Sheets
-        const siteId = row.SiteID || row['Site ID'] || row.SiteId || row.site_id
-                     || row.SITEID || row['Site_ID'] || row.SiteCode || row.siteid || '';
-        const key = siteId ? (row.ProjectID + ' - ' + siteId) : row.ProjectID;
-        PROJECTS[key] = {
-          name: row.ProjectName || row['Project Name'] || '',
-          customer: row.Customer || '',
-          phase: row.Phase || '',
-          siteId: siteId,
-          projectId: row.ProjectID
-        };
-      });
-      document.getElementById('kpiTotalProject').textContent = Object.keys(PROJECTS).length;
-    }
-    if(Array.isArray(ma) && ma.length){ ACTIVITIES.length=0; ma.forEach(row=>{if(row.Activity)ACTIVITIES.push(row.Activity);}); }
-    if(Array.isArray(ml) && ml.length){ LOCATIONS.length=0; ml.forEach(row=>{if(row.Location)LOCATIONS.push(row.Location);}); }
-    if(Array.isArray(ts)) applySheetTimesheet(ts);
-
-    // Bersihkan duplikat di Sheets dulu sebelum render
-    if(APPS_SCRIPT_URL){
-      fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body:JSON.stringify({action:'cleanupDuplicates',consultant:CONSULTANT_NAME})})
-        .then(r=>r.json()).then(d=>{ if(d.removed>0) console.log('[Cleanup] Hapus',d.removed,'duplikat dari Sheets'); })
-        .catch(()=>{});
-    }
-
-    statusEl.textContent = 'Terhubung ✓';
-    document.getElementById('btnConnectSheet').style.background='#E7F9EE';
-    document.getElementById('btnConnectSheet').style.color='#15803D';
-    document.getElementById('btnConnectSheet').style.borderColor='#BBF0CE';
-    badge.textContent = '✓ Sinkron dari Google Sheets';
-    showToast('Data berhasil dimuat dari Google Sheets','ok');
-    render();
-    populateMasterModal();
-  }catch(err){
-    statusEl.textContent = 'Gagal konek — cek URL';
-    badge.textContent = '⚠ Gagal sinkron';
-    showToast('Gagal konek ke Google Sheets','err');
-    console.error(err);
-  }
-}
-
 function applySheetTimesheet(ts){
   // Reset semua baris non-holiday dulu biar tidak ada sisa data lama
   rowState.forEach(r=>{ if(!r.holiday){ r.sheetRowId=null; r.filled=false; r.pid=null; r.activity=null; r.location=null; r.hours=null; r.mandays=0; } });
