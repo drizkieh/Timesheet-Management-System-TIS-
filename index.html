@@ -103,8 +103,14 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
 /* ── ADMIN PANEL ── */
 .print-btn{background:#7C3AED;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
 .print-btn:hover{background:#6D28D9;}
+/* ── ADMIN TAB ── */
+.admin-tab-btn{transition:.15s;}
+.badge-status-aktif{background:#DCFCE7;color:#15803D;border-radius:999px;padding:2px 10px;font-size:10.5px;font-weight:600;}
+.badge-status-nonaktif{background:#FEE2E2;color:#DC2626;border-radius:999px;padding:2px 10px;font-size:10.5px;font-weight:600;}
+.badge-role-admin{background:#F2ECFE;color:#7C3AED;border-radius:999px;padding:2px 10px;font-size:10.5px;font-weight:600;}
+.badge-role-user{background:#EFF6FF;color:#2563EB;border-radius:999px;padding:2px 10px;font-size:10.5px;font-weight:600;}
 @media print{
-  #loginPage,aside,header,.no-print{display:none!important;}
+  #loginPage,aside,header,.no-print,#adminTabUsers{display:none!important;}
   #printHeader{display:block!important;}
   body{background:#fff;}
 }
@@ -398,10 +404,17 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
 
     <!-- ============ ADMIN VIEW ============ -->
     <section id="adminView" style="display:none;">
-      <div class="card p-5">
+      <!-- Tab navigation -->
+      <div class="flex gap-2 mb-4 no-print">
+        <button class="admin-tab-btn btn btn-blue text-[11px]" data-atab="timesheet">📋 Semua Timesheet</button>
+        <button class="admin-tab-btn btn btn-outline text-[11px]" data-atab="users">👥 Kelola User</button>
+      </div>
+
+      <!-- TAB: TIMESHEET -->
+      <div id="adminTabTimesheet" class="card p-5">
         <div class="flex items-center justify-between mb-4 flex-wrap gap-3 no-print">
           <div>
-            <div class="text-base font-bold">Admin Panel — Semua Timesheet</div>
+            <div class="text-base font-bold">Semua Timesheet</div>
             <div class="text-xs text-slate-400 mt-0.5">Lihat, filter, dan print timesheet semua consultant</div>
           </div>
           <div class="flex items-center gap-2 flex-wrap">
@@ -412,7 +425,7 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
               <option value="2026-08">Agustus 2026</option>
             </select>
             <button class="btn btn-outline text-[11px]" id="btnAdminRefresh"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Refresh</button>
-            <button class="print-btn" id="btnAdminPrint"><i data-lucide="printer" class="w-3.5 h-3.5"></i>Print / PDF</button>
+            <button class="print-btn no-print" id="btnAdminPrint"><i data-lucide="printer" class="w-3.5 h-3.5"></i>Print / PDF</button>
           </div>
         </div>
         <div id="printHeader" style="display:none;text-align:center;margin-bottom:16px;">
@@ -421,19 +434,79 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
           <div id="printSubtitle" style="font-size:12px;color:#666;margin-top:2px;"></div>
         </div>
         <div style="overflow-x:auto;">
-          <table class="ts">
-            <thead><tr>
-              <th>No</th><th>Consultant</th><th>Date</th><th>Project ID</th>
-              <th>Project Name</th><th>Activity</th><th>Location</th>
-              <th>Hours</th><th>Mandays</th><th>Status</th>
-            </tr></thead>
-            <tbody id="adminTBody"></tbody>
-          </table>
+          <table class="ts"><thead><tr>
+            <th>No</th><th>Consultant</th><th>Date</th><th>Project ID</th>
+            <th>Project Name</th><th>Activity</th><th>Location</th>
+            <th>Hours</th><th>Mandays</th><th>Status</th>
+          </tr></thead><tbody id="adminTBody"></tbody></table>
           <div id="adminEmpty" class="hidden text-center py-8 text-slate-400 text-sm">Tidak ada data.</div>
         </div>
         <div class="mt-3 text-xs text-slate-400 no-print" id="adminSummary"></div>
       </div>
+
+      <!-- TAB: KELOLA USER -->
+      <div id="adminTabUsers" style="display:none;">
+        <div class="card p-5 mb-4">
+          <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <div>
+              <div class="text-base font-bold">Kelola User</div>
+              <div class="text-xs text-slate-400 mt-0.5">Tambah, edit, dan nonaktifkan akun consultant</div>
+            </div>
+            <button class="btn btn-blue text-[11px]" id="btnTambahUser"><i data-lucide="user-plus" class="w-3.5 h-3.5"></i>Tambah User</button>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="ts">
+              <thead><tr>
+                <th>No</th><th>Username</th><th>Nama Lengkap</th><th>Position</th>
+                <th>Project</th><th>Home Base</th><th>No HP</th>
+                <th>Start Kontrak</th><th>End Kontrak</th><th>Role</th><th>Status</th><th>Aksi</th>
+              </tr></thead>
+              <tbody id="userTBody"></tbody>
+            </table>
+            <div id="userEmpty" class="hidden text-center py-8 text-slate-400 text-sm">Belum ada user.</div>
+          </div>
+        </div>
+      </div>
     </section>
+
+    <!-- MODAL TAMBAH/EDIT USER -->
+    <div id="modalUser" class="modal-overlay" style="display:none;">
+      <div class="modal-box" style="width:560px;">
+        <div class="modal-header">
+          <div>
+            <div class="font-bold text-base" id="modalUserTitle">Tambah User Baru</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">Data tersimpan di sheet Users Google Sheets</div>
+          </div>
+          <button id="btnModalUserClose" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-500"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="userEditIdx">
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Username *</label><input id="uUsername" placeholder="cth: john.doe" autocomplete="off"></div>
+            <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Password *</label><input id="uPassword" type="password" placeholder="Min. 6 karakter"></div>
+            <div class="col-span-2"><label class="text-[11px] font-semibold text-slate-500 block mb-1">Nama Lengkap *</label><input id="uFullName" placeholder="cth: John Doe" autocomplete="off"></div>
+            <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Position</label><input id="uPosition" placeholder="cth: Project Admin" autocomplete="off"></div>
+            <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Project</label><input id="uProject" placeholder="cth: Telkominfra" autocomplete="off"></div>
+            <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Home Base</label><input id="uHomeBase" placeholder="cth: Jakarta" autocomplete="off"></div>
+            <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">No HP</label><input id="uNoHP" placeholder="cth: 08123456789" autocomplete="off"></div>
+            <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Start Kontrak</label><input id="uStartKontrak" type="date"></div>
+            <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">End Kontrak</label><input id="uEndKontrak" type="date"></div>
+            <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Role</label>
+              <select id="uRole"><option value="user">User (Consultant)</option><option value="admin">Admin</option></select>
+            </div>
+            <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Status</label>
+              <select id="uStatus"><option value="Aktif">Aktif</option><option value="Non-aktif">Non-aktif</option></select>
+            </div>
+          </div>
+          <div id="userFormError" style="color:#DC2626;font-size:12px;margin-top:10px;"></div>
+        </div>
+        <div class="modal-footer">
+          <button id="btnModalUserCancel" class="btn btn-outline">Batal</button>
+          <button id="btnSimpanUser" class="btn btn-blue"><i data-lucide="save" class="w-3.5 h-3.5"></i>Simpan User</button>
+        </div>
+      </div>
+    </div>
+
     </main>
   </div>
 </div>
@@ -500,10 +573,13 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
 lucide.createIcons();
 
 // ================= GOOGLE SHEETS CONFIG =================
-
-let APPS_SCRIPT_URL = "https://script.google.com/macros/library/d/1WIAclezYcfaPPfC-Xx0IFbXKIEk3pngH6q_cnFi1dP4ynqTJCvjyYEir/10";
+let APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzdFHg9lW-Q42ZeG_lsybq9PzlLXyxwSCq8et4UR0ogjcUqGpboAsKCljCCffzFtN5AbA/exec";
 let CONSULTANT_NAME = "";
 let CURRENT_USER    = null;
+const CURRENT_MONTH = "2026-07";
+let usageFrequency  = {};
+let activityHistory = [];
+let activeRowIdx    = null;
 
 // =========================================================
 // SESSION
@@ -1423,6 +1499,169 @@ document.querySelectorAll('.nav-item[data-view]').forEach(el=>{
     }
     if(window.innerWidth < 1024) closeSidebar();
   });
+});
+
+// =========================================================
+// ADMIN TAB SWITCH
+// =========================================================
+document.querySelectorAll('.admin-tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.admin-tab-btn').forEach(b=>{ b.className='admin-tab-btn btn btn-outline text-[11px]'; });
+    btn.className='admin-tab-btn btn btn-blue text-[11px]';
+    const tab = btn.dataset.atab;
+    document.getElementById('adminTabTimesheet').style.display = tab==='timesheet' ? '' : 'none';
+    document.getElementById('adminTabUsers').style.display     = tab==='users'     ? '' : 'none';
+    if(tab==='users') loadUserList();
+  });
+});
+
+// =========================================================
+// KELOLA USER
+// =========================================================
+let userList = [];
+
+async function loadUserList(){
+  const tbody  = document.getElementById('userTBody');
+  const emptyEl= document.getElementById('userEmpty');
+  tbody.innerHTML='<tr><td colspan="12" style="text-align:center;padding:20px;color:#8A93A6;">⏳ Memuat data user...</td></tr>';
+  emptyEl.classList.add('hidden');
+  try{
+    const data = await fetch(`${APPS_SCRIPT_URL}?action=getUsers`).then(r=>r.json());
+    userList = Array.isArray(data) ? data : [];
+    renderUserTable();
+  }catch(e){
+    tbody.innerHTML='<tr><td colspan="12" style="text-align:center;color:#DC2626;padding:20px;">Gagal memuat data user</td></tr>';
+  }
+}
+
+function renderUserTable(){
+  const tbody  = document.getElementById('userTBody');
+  const emptyEl= document.getElementById('userEmpty');
+  tbody.innerHTML='';
+  if(!userList.length){ emptyEl.classList.remove('hidden'); return; }
+  emptyEl.classList.add('hidden');
+  userList.forEach((u,i)=>{
+    const tr=document.createElement('tr');
+    const statusBadge = u.Status==='Aktif'
+      ? `<span class="badge-status-aktif">Aktif</span>`
+      : `<span class="badge-status-nonaktif">Non-aktif</span>`;
+    const roleBadge = (u.Role||'').toLowerCase()==='admin'
+      ? `<span class="badge-role-admin">Admin</span>`
+      : `<span class="badge-role-user">User</span>`;
+    tr.innerHTML=`
+      <td>${i+1}</td>
+      <td style="font-family:monospace;font-size:12px;font-weight:600;">${u.Username||'-'}</td>
+      <td style="font-weight:600;">${u.FullName||'-'}</td>
+      <td style="font-size:11.5px;">${u.Position||'-'}</td>
+      <td style="font-size:11.5px;">${u.Project||'-'}</td>
+      <td style="font-size:11.5px;">${u.HomeBase||'-'}</td>
+      <td style="font-size:11.5px;">${u.NoHP||'-'}</td>
+      <td style="font-size:11px;white-space:nowrap;">${u.StartKontrak||'-'}</td>
+      <td style="font-size:11px;white-space:nowrap;">${u.EndKontrak||'-'}</td>
+      <td>${roleBadge}</td>
+      <td>${statusBadge}</td>
+      <td><div class="flex gap-1">
+        <button class="btn btn-outline text-[10px] editUserBtn" data-idx="${i}" style="padding:3px 8px;">Edit</button>
+        <button class="btn text-[10px] toggleStatusBtn" data-idx="${i}" style="padding:3px 8px;background:${u.Status==='Aktif'?'#FEE2E2;color:#DC2626':'#DCFCE7;color:#15803D'}">
+          ${u.Status==='Aktif'?'Nonaktifkan':'Aktifkan'}
+        </button>
+      </div></td>`;
+    tbody.appendChild(tr);
+  });
+  document.querySelectorAll('.editUserBtn').forEach(btn=>{
+    btn.addEventListener('click',()=>openUserModal(+btn.dataset.idx));
+  });
+  document.querySelectorAll('.toggleStatusBtn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const u=userList[+btn.dataset.idx];
+      const newStatus=u.Status==='Aktif'?'Non-aktif':'Aktif';
+      btn.disabled=true; btn.textContent='...';
+      try{
+        await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+          body:JSON.stringify({action:'saveUser',user:{...u,Status:newStatus},isEdit:true})});
+        showToast(`User ${u.FullName} ${newStatus==='Aktif'?'diaktifkan':'dinonaktifkan'}`,'ok');
+        await loadUserList();
+      }catch(e){ showToast('Gagal update status','err'); btn.disabled=false; }
+    });
+  });
+}
+
+function openUserModal(idx){
+  const isEdit=idx!==undefined&&idx>=0;
+  document.getElementById('modalUserTitle').textContent=isEdit?'Edit User':'Tambah User Baru';
+  document.getElementById('userEditIdx').value=isEdit?idx:-1;
+  document.getElementById('userFormError').textContent='';
+  if(isEdit){
+    const u=userList[idx];
+    document.getElementById('uUsername').value=u.Username||'';
+    document.getElementById('uPassword').value='';
+    document.getElementById('uFullName').value=u.FullName||'';
+    document.getElementById('uPosition').value=u.Position||'';
+    document.getElementById('uProject').value=u.Project||'';
+    document.getElementById('uHomeBase').value=u.HomeBase||'';
+    document.getElementById('uNoHP').value=u.NoHP||'';
+    document.getElementById('uStartKontrak').value=u.StartKontrak||'';
+    document.getElementById('uEndKontrak').value=u.EndKontrak||'';
+    document.getElementById('uRole').value=u.Role||'user';
+    document.getElementById('uStatus').value=u.Status||'Aktif';
+    document.getElementById('uUsername').disabled=true;
+  } else {
+    ['uUsername','uPassword','uFullName','uPosition','uProject','uHomeBase','uNoHP','uStartKontrak','uEndKontrak'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('uRole').value='user';
+    document.getElementById('uStatus').value='Aktif';
+    document.getElementById('uUsername').disabled=false;
+  }
+  document.getElementById('modalUser').style.display='flex';
+  lucide.createIcons();
+}
+
+function closeUserModal(){
+  document.getElementById('modalUser').style.display='none';
+  document.getElementById('uUsername').disabled=false;
+}
+
+document.getElementById('btnTambahUser').addEventListener('click',()=>openUserModal());
+document.getElementById('btnModalUserClose').addEventListener('click',closeUserModal);
+document.getElementById('btnModalUserCancel').addEventListener('click',closeUserModal);
+document.getElementById('modalUser').addEventListener('click',e=>{ if(e.target===document.getElementById('modalUser'))closeUserModal(); });
+
+document.getElementById('btnSimpanUser').addEventListener('click', async ()=>{
+  const btn=document.getElementById('btnSimpanUser');
+  const errEl=document.getElementById('userFormError');
+  const editIdx=+document.getElementById('userEditIdx').value;
+  const isEdit=editIdx>=0;
+  const username=document.getElementById('uUsername').value.trim();
+  const password=document.getElementById('uPassword').value.trim();
+  const fullname=document.getElementById('uFullName').value.trim();
+  if(!fullname){ errEl.textContent='Nama Lengkap wajib diisi.'; return; }
+  if(!isEdit&&!username){ errEl.textContent='Username wajib diisi.'; return; }
+  if(!isEdit&&!password){ errEl.textContent='Password wajib diisi.'; return; }
+  if(!isEdit&&password.length<6){ errEl.textContent='Password minimal 6 karakter.'; return; }
+  errEl.textContent='';
+  const user={
+    Username:    isEdit?userList[editIdx].Username:username,
+    Password:    password||(isEdit?userList[editIdx].Password:''),
+    FullName:    fullname,
+    Position:    document.getElementById('uPosition').value.trim(),
+    Project:     document.getElementById('uProject').value.trim(),
+    HomeBase:    document.getElementById('uHomeBase').value.trim(),
+    NoHP:        document.getElementById('uNoHP').value.trim(),
+    StartKontrak:document.getElementById('uStartKontrak').value,
+    EndKontrak:  document.getElementById('uEndKontrak').value,
+    Role:        document.getElementById('uRole').value,
+    Status:      document.getElementById('uStatus').value,
+  };
+  btn.classList.add('btn-loading'); btn.disabled=true;
+  btn.innerHTML='<i data-lucide="save" class="w-3.5 h-3.5"></i>Menyimpan...';
+  try{
+    const res=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'saveUser',user,isEdit})});
+    const data=await res.json();
+    if(data.error){ errEl.textContent=data.error; }
+    else{ showToast(isEdit?'User berhasil diupdate':'User baru berhasil ditambahkan','ok'); closeUserModal(); await loadUserList(); }
+  }catch(e){ errEl.textContent='Gagal menyimpan. Cek koneksi.'; }
+  btn.classList.remove('btn-loading'); btn.disabled=false;
+  btn.innerHTML='<i data-lucide="save" class="w-3.5 h-3.5"></i>Simpan User';
+  lucide.createIcons();
 });
 </script>
 </body>
