@@ -503,6 +503,10 @@ lucide.createIcons();
 let APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyImsNG9aW1P42W0kFyExuclfq01u61leT6qoEXJF6mNny3a1c6nZVQ1mJ7i1tYvh2JDw/exec";
 let CONSULTANT_NAME = "";
 let CURRENT_USER    = null;
+const CURRENT_MONTH = "2026-07";
+let usageFrequency  = {};
+let activityHistory = [];
+let activeRowIdx    = null;
 
 // =========================================================
 // SESSION
@@ -599,11 +603,7 @@ function showToast(msg, type='info'){
 // CONNECT GOOGLE SHEETS
 // =========================================================
 document.getElementById('btnConnectSheet').addEventListener('click', async ()=>{
-  const url = prompt('Tempel Web App URL dari Google Apps Script (Code.gs) kamu:', APPS_SCRIPT_URL||'');
-  if(!url) return;
-  APPS_SCRIPT_URL = url.trim();
-  document.getElementById('connStatus').textContent = 'Menghubungkan...';
-  await loadFromSheets();
+  if(APPS_SCRIPT_URL) await loadFromSheets();
 });
 
 document.getElementById('btnRefreshSheet').addEventListener('click', ()=>loadFromSheets());
