@@ -304,11 +304,11 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
               </div>
             </div>
             <div class="grid grid-cols-2 gap-y-2 text-xs">
-              <div class="flex gap-2"><span class="text-slate-400 w-32">Consultant Name</span><span class="font-semibold">Devry Rizkie H</span></div>
-              <div class="flex gap-2"><span class="text-slate-400 w-24">Customer</span><span class="font-semibold">Telkom Infra</span></div>
-              <div class="flex gap-2"><span class="text-slate-400 w-32">Position</span><span class="font-semibold">Project Admin</span></div>
-              <div class="flex gap-2"><span class="text-slate-400 w-24">Month / Year</span><span class="font-semibold">Juli 2026</span></div>
-              <div class="flex gap-2"><span class="text-slate-400 w-32">Project</span><span class="font-semibold">Telkominfra</span></div>
+              <div class="flex gap-2"><span class="text-slate-400 w-32">Consultant Name</span><span class="font-semibold" id="infoConsultantName">-</span></div>
+              <div class="flex gap-2"><span class="text-slate-400 w-24">Customer</span><span class="font-semibold" id="infoCustomer">-</span></div>
+              <div class="flex gap-2"><span class="text-slate-400 w-32">Position</span><span class="font-semibold" id="infoPosition">-</span></div>
+              <div class="flex gap-2"><span class="text-slate-400 w-24">Month / Year</span><span class="font-semibold" id="infoMonthYear">-</span></div>
+              <div class="flex gap-2"><span class="text-slate-400 w-32">Project</span><span class="font-semibold" id="infoProject">-</span></div>
             </div>
           </div>
 
@@ -627,13 +627,39 @@ function initSession(user){
   document.getElementById('userAvatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.fullname)}`;
   if(user.role === 'admin') document.getElementById('navAdminMenu').style.display = '';
   rowState = buildEmptyRowState(CURRENT_MONTH);
+  updateInfoCard();
   // Tampilkan loading screen, lalu load data
   showLoadingScreen(true);
   setLoadingProgress(10, 'Menghubungkan ke Google Sheets...');
   loadFromSheets().then(()=>{
+    updateInfoCard(); // panggil ulang setelah PROJECTS ke-load, biar Customer ikut ke-resolve
     setLoadingProgress(100, 'Selesai!');
     setTimeout(()=>showLoadingScreen(false), 400);
   }).catch(()=>showLoadingScreen(false));
+}
+
+// Isi kartu "Informasi Timesheet" sesuai user yang sedang login
+function updateInfoCard(){
+  if(!CURRENT_USER) return;
+  const nameEl  = document.getElementById('infoConsultantName');
+  const custEl  = document.getElementById('infoCustomer');
+  const posEl   = document.getElementById('infoPosition');
+  const projEl  = document.getElementById('infoProject');
+  const monthEl = document.getElementById('infoMonthYear');
+  if(nameEl) nameEl.textContent = CURRENT_USER.fullname || '-';
+  if(posEl)  posEl.textContent  = CURRENT_USER.position || '-';
+  if(projEl) projEl.textContent = CURRENT_USER.project  || '-';
+  if(monthEl){
+    const [y,m] = CURRENT_MONTH.split('-').map(Number);
+    monthEl.textContent = `${_MONTH_ID[m-1]} ${y}`;
+  }
+  // Customer dicari dari master project (PROJECTS) berdasarkan nama Project user
+  let customer = CURRENT_USER.customer || '';
+  if(!customer && CURRENT_USER.project && typeof PROJECTS !== 'undefined'){
+    const match = Object.values(PROJECTS).find(p => (p.name||'').toLowerCase() === CURRENT_USER.project.toLowerCase());
+    if(match) customer = match.customer || '';
+  }
+  if(custEl) custEl.textContent = customer || '-';
 }
 
 function logout(){
@@ -644,6 +670,9 @@ function logout(){
   document.getElementById('loginPassword').value = '';
   document.getElementById('loginError').textContent = '';
   document.getElementById('navAdminMenu').style.display = 'none';
+  ['infoConsultantName','infoCustomer','infoPosition','infoProject','infoMonthYear'].forEach(id=>{
+    const el = document.getElementById(id); if(el) el.textContent = '-';
+  });
   rowState = buildEmptyRowState(CURRENT_MONTH);
   render();
 }
