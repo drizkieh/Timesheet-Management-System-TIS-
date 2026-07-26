@@ -84,9 +84,22 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
 .login-field label{display:block;font-size:12px;font-weight:600;color:#5A6479;margin-bottom:6px;}
 .login-field input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;}
 .login-field input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.12);outline:none;}
-.btn-login{width:100%;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;}
+.btn-login{width:100%;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;transition:.2s;position:relative;overflow:hidden;}
 .btn-login:hover{background:#2563EB;}
+.btn-login:disabled{background:#93C5FD;cursor:not-allowed;}
 #loginError{color:#DC2626;font-size:12px;margin-top:8px;text-align:center;min-height:18px;}
+/* Login box animasi masuk */
+@keyframes loginFadeIn{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+@keyframes loginShake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-8px);}40%,80%{transform:translateX(8px);}}
+.login-box{animation:loginFadeIn .4s ease;}
+/* Login loading spinner */
+.login-spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px;}
+/* Nav item disabled */
+.nav-item.nav-disabled{opacity:.4;cursor:not-allowed;pointer-events:none;text-decoration:line-through;text-decoration-color:#6B7A99;}
+.nav-item.nav-disabled:hover{background:none;color:#A7B0C4;}
+/* Tombol loading state */
+.btn-loading{position:relative;pointer-events:none;opacity:.8;}
+.btn-loading::after{content:'';display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin-left:8px;vertical-align:middle;}
 /* ── ADMIN PANEL ── */
 .print-btn{background:#7C3AED;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
 .print-btn:hover{background:#6D28D9;}
@@ -187,17 +200,17 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
           <div class="nav-item" id="menuTimesheet"><i data-lucide="calendar-clock" class="w-4 h-4"></i>Timesheet<i data-lucide="chevron-down" class="w-3.5 h-3.5 ml-auto"></i></div>
           <div class="ml-8 mt-1 space-y-1 text-[12.5px]" id="submenuTimesheet">
             <div class="nav-item active" data-view="entry" style="padding-left:9px;"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>Input Timesheet</div>
-            <div class="nav-item" data-view="mytimesheet" style="padding-left:9px;"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>My Timesheet</div>
+            <div class="nav-item nav-disabled" style="padding-left:9px;" title="Belum tersedia"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>My Timesheet</div>
           </div>
         </div>
-        <div class="nav-item" data-view="project"><i data-lucide="briefcase" class="w-4 h-4"></i>Project</div>
+        <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="briefcase" class="w-4 h-4"></i>Project</div>
         <div class="nav-item" data-view="master"><i data-lucide="database" class="w-4 h-4"></i>Master Data</div>
-        <div class="nav-item" data-view="report"><i data-lucide="bar-chart-3" class="w-4 h-4"></i>Report</div>
-        <div class="nav-item" data-view="approval"><i data-lucide="check-check" class="w-4 h-4"></i>Approval</div>
+        <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="bar-chart-3" class="w-4 h-4"></i>Report</div>
+        <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="check-check" class="w-4 h-4"></i>Approval</div>
         <div id="navAdminMenu" style="display:none;border-top:1px solid #1B2547;margin-top:8px;padding-top:8px;">
           <div class="nav-item" data-view="admin" style="color:#F59E0B;"><i data-lucide="shield" class="w-4 h-4"></i>Admin Panel</div>
         </div>
-        <div class="nav-item" data-view="setting"><i data-lucide="settings" class="w-4 h-4"></i>Setting</div>
+        <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="settings" class="w-4 h-4"></i>Setting</div>
       </nav>
     </div>
     <div class="card p-3" style="background:#1B2547;border-color:#28325A;">
@@ -490,10 +503,6 @@ lucide.createIcons();
 let APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyImsNG9aW1P42W0kFyExuclfq01u61leT6qoEXJF6mNny3a1c6nZVQ1mJ7i1tYvh2JDw/exec";
 let CONSULTANT_NAME = "";
 let CURRENT_USER    = null;
-const CURRENT_MONTH = "2026-07";
-let usageFrequency  = {};
-let activityHistory = [];
-let activeRowIdx    = null;
 
 // =========================================================
 // SESSION
@@ -535,15 +544,33 @@ document.getElementById('btnLogin').addEventListener('click', async ()=>{
   const errEl    = document.getElementById('loginError');
   if(!username || !password){ errEl.textContent = 'Username dan password wajib diisi.'; return; }
   const btn = document.getElementById('btnLogin');
-  btn.textContent = 'Memuat...'; btn.disabled = true;
+  // Animasi loading
+  btn.disabled = true;
+  btn.innerHTML = '<span class="login-spinner"></span>Memverifikasi...';
   errEl.textContent = '';
   try{
     const res  = await fetch(APPS_SCRIPT_URL, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({action:'login', username, password})});
     const data = await res.json();
-    if(data.error){ errEl.textContent = data.error; }
-    else{ setSession(data.user); initSession(data.user); }
-  }catch(e){ errEl.textContent = 'Gagal konek ke server. Cek koneksi internet.'; }
-  btn.textContent = 'Masuk'; btn.disabled = false;
+    if(data.error){
+      errEl.textContent = data.error;
+      // Animasi shake pada login box
+      const box = document.querySelector('.login-box');
+      box.style.animation = 'none';
+      box.offsetHeight; // reflow
+      box.style.animation = 'loginShake .4s ease';
+    } else {
+      btn.innerHTML = '✓ Berhasil!';
+      btn.style.background = '#15803D';
+      setTimeout(()=>{ setSession(data.user); initSession(data.user); }, 400);
+    }
+  }catch(e){
+    errEl.textContent = 'Gagal konek ke server. Cek koneksi internet.';
+  }
+  if(!document.getElementById('loginPage').classList.contains('hidden')){
+    btn.disabled = false;
+    btn.innerHTML = 'Masuk';
+    btn.style.background = '';
+  }
 });
 document.getElementById('loginPassword').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('btnLogin').click(); });
 document.getElementById('loginUsername').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('loginPassword').focus(); });
@@ -1265,8 +1292,26 @@ async function saveToSheets(status){
   }
 }
 
-document.getElementById('btnSimpanDraft').addEventListener('click',()=>saveToSheets('Draft'));
-document.getElementById('btnSubmit').addEventListener('click',()=>saveToSheets('Submitted'));
+document.getElementById('btnSimpanDraft').addEventListener('click', async ()=>{
+  const btn = document.getElementById('btnSimpanDraft');
+  if(btn.classList.contains('btn-loading')) return;
+  btn.classList.add('btn-loading');
+  btn.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5"></i>Menyimpan...';
+  await saveToSheets('Draft');
+  btn.classList.remove('btn-loading');
+  btn.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5"></i>Simpan Draft';
+  lucide.createIcons();
+});
+document.getElementById('btnSubmit').addEventListener('click', async ()=>{
+  const btn = document.getElementById('btnSubmit');
+  if(btn.classList.contains('btn-loading')) return;
+  btn.classList.add('btn-loading');
+  btn.innerHTML = '<i data-lucide="send" class="w-3.5 h-3.5"></i>Mengirim...';
+  await saveToSheets('Submitted');
+  btn.classList.remove('btn-loading');
+  btn.innerHTML = '<i data-lucide="send" class="w-3.5 h-3.5"></i>Submit ke Project Manager';
+  lucide.createIcons();
+});
 
 // =========================================================
 // EXPORT EXCEL
