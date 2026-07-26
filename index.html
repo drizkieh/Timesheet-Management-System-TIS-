@@ -103,7 +103,12 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
 /* ── ADMIN PANEL ── */
 .print-btn{background:#7C3AED;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
 .print-btn:hover{background:#6D28D9;}
-/* ── ADMIN TAB ── */
+/* ── MOBILE TIMESHEET card style ── */
+@media (max-width:767px){
+  .ts-wrap{overflow-x:auto;}
+  table.ts thead th, table.ts tbody td{white-space:nowrap;font-size:11px;padding:6px 5px;}
+  table.ts tbody td input{min-width:90px;font-size:11px;}
+}
 .admin-tab-btn{transition:.15s;}
 .badge-status-aktif{background:#DCFCE7;color:#15803D;border-radius:999px;padding:2px 10px;font-size:10.5px;font-weight:600;}
 .badge-status-nonaktif{background:#FEE2E2;color:#DC2626;border-radius:999px;padding:2px 10px;font-size:10.5px;font-weight:600;}
@@ -181,6 +186,19 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
   </div>
 </div>
 
+<!-- ============ LOADING SCREEN ============ -->
+<div id="loadingScreen" style="display:none;position:fixed;inset:0;z-index:9998;background:linear-gradient(135deg,#0E1730 0%,#1a2a5e 100%);flex-direction:column;align-items:center;justify-content:center;">
+  <div style="text-align:center;">
+    <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#F59E0B,#EF4444);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:24px;color:#fff;margin:0 auto 20px;">I</div>
+    <div style="color:#fff;font-size:16px;font-weight:700;margin-bottom:6px;">Memuat Dashboard...</div>
+    <div style="color:#8A93A6;font-size:12px;margin-bottom:28px;" id="loadingMsg">Menghubungkan ke Google Sheets</div>
+    <div style="width:200px;height:4px;background:#1B2547;border-radius:999px;margin:0 auto;overflow:hidden;">
+      <div id="loadingBar" style="height:100%;width:0%;background:linear-gradient(90deg,#3B82F6,#F59E0B);border-radius:999px;transition:width .4s ease;"></div>
+    </div>
+    <div style="color:#5A6479;font-size:11px;margin-top:12px;" id="loadingPct">0%</div>
+  </div>
+</div>
+
   <!-- SIDEBAR -->
   <aside id="sidebar" class="w-56 shrink-0 flex flex-col justify-between p-4" style="background:var(--navy);">
     <div>
@@ -210,7 +228,7 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
           </div>
         </div>
         <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="briefcase" class="w-4 h-4"></i>Project</div>
-        <div class="nav-item" data-view="master"><i data-lucide="database" class="w-4 h-4"></i>Master Data</div>
+        <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="database" class="w-4 h-4"></i>Master Data</div>
         <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="bar-chart-3" class="w-4 h-4"></i>Report</div>
         <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="check-check" class="w-4 h-4"></i>Approval</div>
         <div id="navAdminMenu" style="display:none;border-top:1px solid #1B2547;margin-top:8px;padding-top:8px;">
@@ -471,7 +489,7 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
 
     <!-- MODAL TAMBAH/EDIT USER -->
     <div id="modalUser" class="modal-overlay" style="display:none;">
-      <div class="modal-box" style="width:560px;">
+      <div class="modal-box" style="width:580px;">
         <div class="modal-header">
           <div>
             <div class="font-bold text-base" id="modalUserTitle">Tambah User Baru</div>
@@ -483,12 +501,17 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
           <input type="hidden" id="userEditIdx">
           <div class="grid grid-cols-2 gap-3">
             <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Username *</label><input id="uUsername" placeholder="cth: john.doe" autocomplete="off"></div>
-            <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Password *</label><input id="uPassword" type="password" placeholder="Min. 6 karakter"></div>
+            <div>
+              <label class="text-[11px] font-semibold text-slate-500 block mb-1">Password *
+                <span id="uPasswordHint" style="display:none;font-weight:400;color:#8A93A6;"> — kosongkan jika tidak diubah</span>
+              </label>
+              <input id="uPassword" type="password" placeholder="Min. 6 karakter">
+            </div>
             <div class="col-span-2"><label class="text-[11px] font-semibold text-slate-500 block mb-1">Nama Lengkap *</label><input id="uFullName" placeholder="cth: John Doe" autocomplete="off"></div>
             <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Position</label><input id="uPosition" placeholder="cth: Project Admin" autocomplete="off"></div>
             <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Project</label><input id="uProject" placeholder="cth: Telkominfra" autocomplete="off"></div>
             <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Home Base</label><input id="uHomeBase" placeholder="cth: Jakarta" autocomplete="off"></div>
-            <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">No HP</label><input id="uNoHP" placeholder="cth: 08123456789" autocomplete="off"></div>
+            <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">No HP</label><input id="uNoHP" placeholder="cth: 08123456789" autocomplete="off" type="tel"></div>
             <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Start Kontrak</label><input id="uStartKontrak" type="date"></div>
             <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">End Kontrak</label><input id="uEndKontrak" type="date"></div>
             <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Role</label>
@@ -501,6 +524,7 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
           <div id="userFormError" style="color:#DC2626;font-size:12px;margin-top:10px;"></div>
         </div>
         <div class="modal-footer">
+          <button id="btnDeleteUser" class="btn text-[11px] mr-auto" style="background:#FEE2E2;color:#DC2626;border:1px solid #FECACA;display:none;"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Hapus User</button>
           <button id="btnModalUserCancel" class="btn btn-outline">Batal</button>
           <button id="btnSimpanUser" class="btn btn-blue"><i data-lucide="save" class="w-3.5 h-3.5"></i>Simpan User</button>
         </div>
@@ -573,7 +597,8 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
 lucide.createIcons();
 
 // ================= GOOGLE SHEETS CONFIG =================
-let APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzdFHg9lW-Q42ZeG_lsybq9PzlLXyxwSCq8et4UR0ogjcUqGpboAsKCljCCffzFtN5AbA/exec";
+
+let APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhipIs-9yF4QsXJf7wPwdJgTd2rAbV8iKwSh4C9LtJgNyBLEY2Aakn7br7twLJA43BTA/exec";
 let CONSULTANT_NAME = "";
 let CURRENT_USER    = null;
 const CURRENT_MONTH = "2026-07";
@@ -588,6 +613,16 @@ function getSession(){ try{ return JSON.parse(localStorage.getItem('stms_session
 function setSession(u){ localStorage.setItem('stms_session', JSON.stringify(u)); }
 function clearSession(){ localStorage.removeItem('stms_session'); }
 
+function showLoadingScreen(show){
+  const el = document.getElementById('loadingScreen');
+  el.style.display = show ? 'flex' : 'none';
+}
+function setLoadingProgress(pct, msg){
+  document.getElementById('loadingBar').style.width = pct + '%';
+  document.getElementById('loadingPct').textContent  = pct + '%';
+  if(msg) document.getElementById('loadingMsg').textContent = msg;
+}
+
 function initSession(user){
   CURRENT_USER    = user;
   CONSULTANT_NAME = user.fullname;
@@ -597,7 +632,13 @@ function initSession(user){
   document.getElementById('userAvatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.fullname)}`;
   if(user.role === 'admin') document.getElementById('navAdminMenu').style.display = '';
   rowState = buildEmptyRowState(CURRENT_MONTH);
-  loadFromSheets();
+  // Tampilkan loading screen, lalu load data
+  showLoadingScreen(true);
+  setLoadingProgress(10, 'Menghubungkan ke Google Sheets...');
+  loadFromSheets().then(()=>{
+    setLoadingProgress(100, 'Selesai!');
+    setTimeout(()=>showLoadingScreen(false), 400);
+  }).catch(()=>showLoadingScreen(false));
 }
 
 function logout(){
@@ -686,13 +727,54 @@ async function loadFromSheets(){
   const statusEl = document.getElementById('connStatus');
   const badge = document.getElementById('syncBadge');
   badge.textContent = '⏳ Memuat dari Sheets...';
+  setLoadingProgress(20, 'Mengambil Master Project...');
   try{
-    const [mp, ma, ml, ts] = await Promise.all([
+    const [mp, ma, ml] = await Promise.all([
       fetch(`${APPS_SCRIPT_URL}?action=getMasterProject`).then(r=>r.json()),
       fetch(`${APPS_SCRIPT_URL}?action=getMasterActivity`).then(r=>r.json()),
       fetch(`${APPS_SCRIPT_URL}?action=getMasterLocation`).then(r=>r.json()),
-      fetch(`${APPS_SCRIPT_URL}?action=getTimesheet&consultant=${encodeURIComponent(CONSULTANT_NAME)}&month=${CURRENT_MONTH}`).then(r=>r.json()),
     ]);
+    setLoadingProgress(60, 'Mengambil data Timesheet...');
+    const ts = await fetch(`${APPS_SCRIPT_URL}?action=getTimesheet&consultant=${encodeURIComponent(CONSULTANT_NAME)}&month=${CURRENT_MONTH}`).then(r=>r.json());
+    setLoadingProgress(85, 'Menyinkronkan data...');
+
+    if(Array.isArray(mp) && mp.length){
+      Object.keys(PROJECTS).forEach(k=>delete PROJECTS[k]);
+      if(mp[0]) console.log('[MasterProject] Kolom dari Sheets:', Object.keys(mp[0]));
+      mp.forEach(row=>{
+        if(!row.ProjectID) return;
+        const siteId = row.SiteID || row['Site ID'] || row.SiteId || row.site_id || row.SITEID || row['Site_ID'] || row.SiteCode || row.siteid || '';
+        const key = siteId ? (row.ProjectID + ' - ' + siteId) : row.ProjectID;
+        PROJECTS[key] = { name: row.ProjectName || row['Project Name'] || '', customer: row.Customer || '', phase: row.Phase || '', siteId: siteId, projectId: row.ProjectID };
+      });
+      document.getElementById('kpiTotalProject').textContent = Object.keys(PROJECTS).length;
+    }
+    if(Array.isArray(ma) && ma.length){ ACTIVITIES.length=0; ma.forEach(row=>{if(row.Activity)ACTIVITIES.push(row.Activity);}); }
+    if(Array.isArray(ml) && ml.length){ LOCATIONS.length=0; ml.forEach(row=>{if(row.Location)LOCATIONS.push(row.Location);}); }
+    if(Array.isArray(ts)) applySheetTimesheet(ts);
+
+    // Bersihkan duplikat
+    if(APPS_SCRIPT_URL){
+      fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify({action:'cleanupDuplicates',consultant:CONSULTANT_NAME})})
+        .then(r=>r.json()).then(d=>{ if(d.removed>0) console.log('[Cleanup] Hapus',d.removed,'duplikat'); }).catch(()=>{});
+    }
+
+    statusEl.textContent = 'Terhubung ✓';
+    document.getElementById('btnConnectSheet').style.background='#E7F9EE';
+    document.getElementById('btnConnectSheet').style.color='#15803D';
+    document.getElementById('btnConnectSheet').style.borderColor='#BBF0CE';
+    badge.textContent = '✓ Sinkron dari Google Sheets';
+    showToast('Data berhasil dimuat dari Google Sheets','ok');
+    render();
+    populateMasterModal();
+  }catch(err){
+    statusEl.textContent = 'Gagal konek — cek URL';
+    badge.textContent = '⚠ Gagal sinkron';
+    showToast('Gagal konek ke Google Sheets','err');
+    console.error(err);
+  }
+}
 
     if(Array.isArray(mp) && mp.length){
       Object.keys(PROJECTS).forEach(k=>delete PROJECTS[k]);
@@ -1591,6 +1673,8 @@ function openUserModal(idx){
   document.getElementById('modalUserTitle').textContent=isEdit?'Edit User':'Tambah User Baru';
   document.getElementById('userEditIdx').value=isEdit?idx:-1;
   document.getElementById('userFormError').textContent='';
+  document.getElementById('uPasswordHint').style.display=isEdit?'inline':'none';
+  document.getElementById('btnDeleteUser').style.display=isEdit?'inline-flex':'none';
   if(isEdit){
     const u=userList[idx];
     document.getElementById('uUsername').value=u.Username||'';
@@ -1600,9 +1684,10 @@ function openUserModal(idx){
     document.getElementById('uProject').value=u.Project||'';
     document.getElementById('uHomeBase').value=u.HomeBase||'';
     document.getElementById('uNoHP').value=u.NoHP||'';
-    document.getElementById('uStartKontrak').value=u.StartKontrak||'';
-    document.getElementById('uEndKontrak').value=u.EndKontrak||'';
-    document.getElementById('uRole').value=u.Role||'user';
+    // Format tanggal ke YYYY-MM-DD untuk input type=date
+    document.getElementById('uStartKontrak').value=toDateInput(u.StartKontrak||'');
+    document.getElementById('uEndKontrak').value=toDateInput(u.EndKontrak||'');
+    document.getElementById('uRole').value=(u.Role||'user').toLowerCase();
     document.getElementById('uStatus').value=u.Status||'Aktif';
     document.getElementById('uUsername').disabled=true;
   } else {
@@ -1615,6 +1700,20 @@ function openUserModal(idx){
   lucide.createIcons();
 }
 
+// Konversi berbagai format tanggal ke YYYY-MM-DD untuk input[type=date]
+function toDateInput(val){
+  if(!val) return '';
+  const s = String(val).trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s; // sudah YYYY-MM-DD
+  // Coba parse
+  const d = new Date(s);
+  if(!isNaN(d.getTime())){
+    const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${dd}`;
+  }
+  return '';
+}
+
 function closeUserModal(){
   document.getElementById('modalUser').style.display='none';
   document.getElementById('uUsername').disabled=false;
@@ -1624,6 +1723,24 @@ document.getElementById('btnTambahUser').addEventListener('click',()=>openUserMo
 document.getElementById('btnModalUserClose').addEventListener('click',closeUserModal);
 document.getElementById('btnModalUserCancel').addEventListener('click',closeUserModal);
 document.getElementById('modalUser').addEventListener('click',e=>{ if(e.target===document.getElementById('modalUser'))closeUserModal(); });
+
+document.getElementById('btnDeleteUser').addEventListener('click', async ()=>{
+  const editIdx=+document.getElementById('userEditIdx').value;
+  if(editIdx<0) return;
+  const u=userList[editIdx];
+  if(!confirm(`Hapus user "${u.FullName}" (${u.Username})? Tindakan ini tidak bisa dibatalkan.`)) return;
+  const btn=document.getElementById('btnDeleteUser');
+  btn.disabled=true; btn.textContent='Menghapus...';
+  try{
+    const res=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'deleteUser',username:u.Username})});
+    const data=await res.json();
+    if(data.error){ showToast(data.error,'err'); }
+    else{ showToast(`User ${u.FullName} berhasil dihapus`,'ok'); closeUserModal(); await loadUserList(); }
+  }catch(e){ showToast('Gagal hapus user','err'); }
+  btn.disabled=false;
+  btn.innerHTML='<i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Hapus User';
+  lucide.createIcons();
+});
 
 document.getElementById('btnSimpanUser').addEventListener('click', async ()=>{
   const btn=document.getElementById('btnSimpanUser');
