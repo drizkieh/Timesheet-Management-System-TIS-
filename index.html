@@ -109,6 +109,40 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
   table.ts thead th, table.ts tbody td{white-space:nowrap;font-size:11px;padding:6px 5px;}
   table.ts tbody td input{min-width:90px;font-size:11px;}
 }
+/* ── MOBILE TIMESHEET: table jadi kartu di layar sempit ── */
+@media (max-width:640px){
+  .ts-wrap{overflow-x:visible;}
+  table.ts thead{display:none;}
+  table.ts, table.ts tbody{display:block;width:100%;}
+  table.ts tbody tr{
+    display:flex;flex-wrap:wrap;align-items:center;
+    background:#fff;border:1px solid var(--border);border-radius:12px;
+    padding:10px 12px 12px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.04);
+  }
+  table.ts tbody tr.holiday{background:#FFF7F7;}
+  table.ts tbody td{border-bottom:none;padding:0;white-space:normal;}
+  table.ts tbody td:nth-child(1){order:1;flex:0 0 auto;margin-right:8px;}
+  table.ts tbody td:nth-child(2){display:none;}
+  table.ts tbody td:nth-child(3){order:2;flex:1 1 auto;font-weight:700;font-size:13px;}
+  table.ts tbody td:nth-child(12){order:3;flex:0 0 auto;margin-left:8px;display:flex;gap:12px;}
+  table.ts tbody td:nth-child(n+4):nth-child(-n+11){
+    order:4;flex:0 0 100%;
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:7px 0;border-top:1px dashed #EEF1F6;
+  }
+  table.ts tbody td[data-label]::before{
+    content:attr(data-label);flex:0 0 96px;font-size:10px;font-weight:700;
+    color:#8A93A6;text-transform:uppercase;letter-spacing:.03em;
+  }
+  table.ts tbody td[data-label] > *{flex:1;min-width:0;}
+  table.ts tbody td input{width:100%;font-size:12.5px !important;min-width:0;}
+}
+/* ── Cegah layar mobile "ke-zoom" gara-gara ada elemen yang overflow ── */
+html,body{overflow-x:hidden;max-width:100%;}
+.pre-login-hidden{display:none !important;}
+@media (max-width:420px){
+  .login-box{padding:26px 20px;}
+}
 .admin-tab-btn{transition:.15s;}
 .badge-status-aktif{background:#DCFCE7;color:#15803D;border-radius:999px;padding:2px 10px;font-size:10.5px;font-weight:600;}
 .badge-status-nonaktif{background:#FEE2E2;color:#DC2626;border-radius:999px;padding:2px 10px;font-size:10.5px;font-weight:600;}
@@ -200,7 +234,7 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
 </div>
 
   <!-- SIDEBAR -->
-  <aside id="sidebar" class="w-56 shrink-0 flex flex-col justify-between p-4" style="background:var(--navy);">
+  <aside id="sidebar" class="w-56 shrink-0 flex flex-col justify-between p-4 pre-login-hidden" style="background:var(--navy);">
     <div>
       <div class="flex items-center gap-2 px-1 mb-6">
         <div class="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm" style="background:linear-gradient(135deg,#F59E0B,#EF4444);color:#fff;">I</div>
@@ -219,8 +253,8 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
         <button onclick="logout()" title="Logout" style="background:none;border:none;cursor:pointer;padding:4px;flex-shrink:0;" class="text-slate-400 hover:text-red-400"><i data-lucide="log-out" class="w-4 h-4"></i></button>
       </div>
       <nav class="space-y-1">
-        <div class="nav-item active" data-view="dashboard"><i data-lucide="layout-dashboard" class="w-4 h-4"></i>Dashboard</div>
-        <div>
+        <div class="nav-item active" data-view="dashboard" id="navDashboardItem"><i data-lucide="layout-dashboard" class="w-4 h-4"></i>Dashboard</div>
+        <div id="navTimesheetGroup">
           <div class="nav-item" id="menuTimesheet"><i data-lucide="calendar-clock" class="w-4 h-4"></i>Timesheet<i data-lucide="chevron-down" class="w-3.5 h-3.5 ml-auto"></i></div>
           <div class="ml-8 mt-1 space-y-1 text-[12.5px]" id="submenuTimesheet">
             <div class="nav-item active" data-view="entry" style="padding-left:9px;"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>Input Timesheet</div>
@@ -249,7 +283,7 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
   <div id="sidebarOverlay"></div>
 
   <!-- MAIN -->
-  <div class="flex-1 flex flex-col min-w-0">
+  <div id="appMain" class="flex-1 flex flex-col min-w-0 pre-login-hidden">
     <!-- TOPBAR -->
     <header class="flex items-center justify-between px-6 py-4" style="background:#fff;border-bottom:1px solid var(--border);">
       <div class="flex items-center gap-3">
@@ -622,10 +656,17 @@ function initSession(user){
   CURRENT_USER    = user;
   CONSULTANT_NAME = user.fullname;
   document.getElementById('loginPage').classList.add('hidden');
+  document.getElementById('sidebar').classList.remove('pre-login-hidden');
+  document.getElementById('appMain').classList.remove('pre-login-hidden');
   document.getElementById('sidebarName').textContent  = user.fullname;
   document.getElementById('sidebarRole').textContent  = user.role === 'admin' ? 'Administrator' : 'Consultant';
   document.getElementById('userAvatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.fullname)}`;
-  if(user.role === 'admin') document.getElementById('navAdminMenu').style.display = '';
+  if(user.role === 'admin'){
+    document.getElementById('navAdminMenu').style.display = '';
+    // Admin gak perlu halaman Isi Timesheet — sembunyikan menu & dashboard entrinya
+    document.getElementById('navTimesheetGroup').style.display = 'none';
+    document.getElementById('navDashboardItem').style.display = 'none';
+  }
   rowState = buildEmptyRowState(CURRENT_MONTH);
   updateInfoCard();
   // Tampilkan loading screen, lalu load data
@@ -634,7 +675,16 @@ function initSession(user){
   loadFromSheets().then(()=>{
     updateInfoCard(); // panggil ulang setelah PROJECTS ke-load, biar Customer ikut ke-resolve
     setLoadingProgress(100, 'Selesai!');
-    setTimeout(()=>showLoadingScreen(false), 400);
+    setTimeout(()=>{
+      showLoadingScreen(false);
+      if(user.role === 'admin'){
+        // Admin langsung diarahkan ke Admin Panel, bukan halaman timesheet
+        document.getElementById('view-entry-wrap').style.display = 'none';
+        document.getElementById('adminView').style.display = '';
+        document.getElementById('pageTitle').textContent = 'Admin Panel';
+        loadAdminData();
+      }
+    }, 400);
   }).catch(()=>showLoadingScreen(false));
 }
 
@@ -666,10 +716,14 @@ function logout(){
   clearSession();
   CURRENT_USER = null; CONSULTANT_NAME = '';
   document.getElementById('loginPage').classList.remove('hidden');
+  document.getElementById('sidebar').classList.add('pre-login-hidden');
+  document.getElementById('appMain').classList.add('pre-login-hidden');
   document.getElementById('loginUsername').value = '';
   document.getElementById('loginPassword').value = '';
   document.getElementById('loginError').textContent = '';
   document.getElementById('navAdminMenu').style.display = 'none';
+  document.getElementById('navTimesheetGroup').style.display = '';
+  document.getElementById('navDashboardItem').style.display = '';
   ['infoConsultantName','infoCustomer','infoPosition','infoProject','infoMonthYear'].forEach(id=>{
     const el = document.getElementById(id); if(el) el.textContent = '-';
   });
@@ -1024,8 +1078,8 @@ function render(){
         <td><input type="checkbox" class="rowChk"></td>
         <td>${idx+1}</td>
         <td class="datecell">${r.date}<br><span class="text-[10px]">${r.day}</span></td>
-        <td>-</td><td>-</td><td>-</td><td>-</td>
-        <td>Hari Libur</td><td>${r.location||'-'}</td><td>${r.hours||'-'}</td><td>${r.day}</td>
+        <td data-label="Project ID">-</td><td data-label="Project Name">-</td><td data-label="Phase">-</td><td data-label="Customer">-</td>
+        <td data-label="Aktivitas">Hari Libur</td><td data-label="Lokasi">${r.location||'-'}</td><td data-label="Jam">${r.hours||'-'}</td><td data-label="Mandays">${r.day}</td>
         <td><i data-lucide="minus" class="w-3.5 h-3.5 text-slate-300"></i></td>`;
     } else {
       // Semua baris non-holiday selalu editable
@@ -1045,16 +1099,16 @@ function render(){
             <button class="open-master-btn absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500" data-idx="${idx}" title="Buka Master Data"><i data-lucide="search" class="w-3 h-3"></i></button>
           </div>
         </td>
-        <td style="font-size:11.5px;${rowBg}">${p.name&&p.name!=='-'?p.name:'<span class="text-slate-300">-</span>'}</td>
-        <td style="font-size:11.5px;${rowBg}">${p.phase&&p.phase!=='-'?p.phase:'<span class="text-slate-300">-</span>'}</td>
-        <td style="font-size:11.5px;${rowBg}">${p.customer&&p.customer!=='-'?p.customer:'<span class="text-slate-300">-</span>'}</td>
-        <td style="${rowBg}">
+        <td data-label="Project Name" style="font-size:11.5px;${rowBg}">${p.name&&p.name!=='-'?p.name:'<span class="text-slate-300">-</span>'}</td>
+        <td data-label="Phase" style="font-size:11.5px;${rowBg}">${p.phase&&p.phase!=='-'?p.phase:'<span class="text-slate-300">-</span>'}</td>
+        <td data-label="Customer" style="font-size:11.5px;${rowBg}">${p.customer&&p.customer!=='-'?p.customer:'<span class="text-slate-300">-</span>'}</td>
+        <td data-label="Aktivitas" style="${rowBg}">
           <input class="act-input" data-idx="${idx}" value="${r.activity||''}" placeholder="Ketik atau pilih aktivitas..." autocomplete="off">
           ${r.aiSuggest?`<div style="margin-top:4px;background:#FEF9E7;border:1px solid #F5E6A8;border-radius:6px;padding:5px 8px;font-size:10.5px;color:#8A6A16;display:flex;align-items:center;justify-content:space-between;gap:6px;"><span>Gunakan aktivitas kemarin?</span><button class="aiYesBtn" data-idx="${idx}" style="background:#F59E0B;color:#fff;border-radius:5px;padding:2px 8px;font-weight:700;">Ya</button></div>`:''}
         </td>
-        <td style="${rowBg}"><input class="loc-input" data-idx="${idx}" value="${r.location||''}" placeholder="Pilih lokasi..." autocomplete="off"></td>
-        <td style="${rowBg}"><input class="hrs-input" data-idx="${idx}" value="${r.hours||''}" placeholder="08:30 - 17:30" autocomplete="off"></td>
-        <td style="${rowBg}">${r.mandays||''}</td>
+        <td data-label="Lokasi" style="${rowBg}"><input class="loc-input" data-idx="${idx}" value="${r.location||''}" placeholder="Pilih lokasi..." autocomplete="off"></td>
+        <td data-label="Jam" style="${rowBg}"><input class="hrs-input" data-idx="${idx}" value="${r.hours||''}" placeholder="08:30 - 17:30" autocomplete="off"></td>
+        <td data-label="Mandays" style="${rowBg}">${r.mandays||''}</td>
         <td style="${rowBg}" class="flex gap-2">
           <i data-lucide="copy" class="w-3.5 h-3.5 cursor-pointer text-blue-500 copyRow" data-idx="${idx}" title="Copy ke baris berikutnya"></i>
           <i data-lucide="trash-2" class="w-3.5 h-3.5 cursor-pointer text-red-500 delRow" data-idx="${idx}" title="Hapus & sync ke Sheets"></i>
