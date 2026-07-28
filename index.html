@@ -137,6 +137,9 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
   table.ts tbody td[data-label] > *{flex:1;min-width:0;}
   table.ts tbody td input{width:100%;font-size:12.5px !important;min-width:0;}
 }
+/* ── Animasi toggle libur/hari kerja ── */
+@keyframes rowFadeIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+.row-fade-in{animation:rowFadeIn .25s ease forwards;}
 /* ── Cegah layar mobile "ke-zoom" gara-gara ada elemen yang overflow ── */
 html,body{overflow-x:hidden;max-width:100%;}
 .pre-login-hidden{display:none !important;}
@@ -1094,15 +1097,23 @@ document.getElementById('kpiTotalProject').textContent = Object.keys(PROJECTS).l
 // SUGGEST HELPERS
 // =========================================================
 function closeSuggests(){ document.querySelectorAll('.suggest').forEach(e=>e.remove()); }
+// Delay nutup suggest biar tap di mobile sempat register dulu sebelum dropdown hilang
 document.addEventListener('click',(e)=>{
-  if(!e.target.closest('.suggest')&&!e.target.classList.contains('pid-input')&&!e.target.classList.contains('act-input')&&!e.target.classList.contains('loc-input')&&!e.target.classList.contains('hrs-input')) closeSuggests();
+  if(!e.target.closest('.suggest')&&!e.target.classList.contains('pid-input')&&!e.target.classList.contains('act-input')&&!e.target.classList.contains('loc-input')&&!e.target.classList.contains('hrs-input')) setTimeout(closeSuggests, 150);
 });
 
 function positionSuggest(box, inputEl){
   const rect = inputEl.getBoundingClientRect();
-  box.style.left = rect.left+'px';
-  box.style.top = (rect.bottom + window.scrollY + 4)+'px';
-  box.style.minWidth = rect.width+'px';
+  // Pakai fixed positioning dengan koordinat viewport — lebih stabil di mobile
+  box.style.left = Math.max(4, rect.left) + 'px';
+  box.style.top  = (rect.bottom + 4) + 'px';
+  box.style.minWidth = Math.min(rect.width, window.innerWidth - 8) + 'px';
+  box.style.maxWidth = (window.innerWidth - 8) + 'px';
+  // Kalau dropdown bakal keluar layar bawah, tampilkan di atas input
+  const boxH = 220;
+  if(rect.bottom + boxH > window.innerHeight){
+    box.style.top = Math.max(4, rect.top - boxH - 4) + 'px';
+  }
   document.body.appendChild(box);
 }
 
@@ -1127,11 +1138,9 @@ function showPidSuggest(inputEl, idx){
     const baseId = p.projectId || m.split(' - ')[0];
     const siteLabel = p.siteId ? `<span style="font-family:monospace;color:#6D28D9;font-size:11px;"> - ${p.siteId}</span>` : '';
     d.innerHTML=`<div><div class="s-main">${baseId}${siteLabel}</div><div class="s-sub">${p.name} · ${p.customer}</div></div>${isFav?'<span class="s-badge">★ Favorit</span>':''}`;
-    d.addEventListener('click',()=>{
-      rowState[idx].pid=m; rowState[idx].filled=true;
-      if(!rowState[idx].mandays) rowState[idx].mandays=1.0;
-      checkAiSuggestion(idx); closeSuggests(); render();
-    });
+    const pick = ()=>{ rowState[idx].pid=m; rowState[idx].filled=true; if(!rowState[idx].mandays) rowState[idx].mandays=1.0; checkAiSuggestion(idx); closeSuggests(); render(); };
+    d.addEventListener('mousedown', e=>{ e.preventDefault(); pick(); }); // desktop: mousedown beats blur
+    d.addEventListener('touchend',  e=>{ e.preventDefault(); pick(); }); // mobile: touchend
     box.appendChild(d);
   });
   positionSuggest(box, inputEl);
@@ -1147,7 +1156,9 @@ function showActSuggest(inputEl, idx){
   matches.forEach(m=>{
     const d=document.createElement('div'); d.className='suggest-item';
     d.innerHTML=`<span style="white-space:normal;font-size:12px;">${m}</span>`;
-    d.addEventListener('click',()=>{ rowState[idx].activity=m; inputEl.value=m; trackUsage(null,m); closeSuggests(); });
+    const pick = ()=>{ rowState[idx].activity=m; inputEl.value=m; trackUsage(null,m); closeSuggests(); };
+    d.addEventListener('mousedown', e=>{ e.preventDefault(); pick(); });
+    d.addEventListener('touchend',  e=>{ e.preventDefault(); pick(); });
     box.appendChild(d);
   });
   positionSuggest(box, inputEl);
@@ -1163,7 +1174,9 @@ function showLocSuggest(inputEl, idx){
   matches.forEach(m=>{
     const d=document.createElement('div'); d.className='suggest-item';
     d.textContent=m;
-    d.addEventListener('click',()=>{ rowState[idx].location=m; inputEl.value=m; closeSuggests(); });
+    const pick = ()=>{ rowState[idx].location=m; inputEl.value=m; closeSuggests(); };
+    d.addEventListener('mousedown', e=>{ e.preventDefault(); pick(); });
+    d.addEventListener('touchend',  e=>{ e.preventDefault(); pick(); });
     box.appendChild(d);
   });
   positionSuggest(box, inputEl);
@@ -1179,7 +1192,9 @@ function showHrsSuggest(inputEl, idx){
   matches.forEach(m=>{
     const d=document.createElement('div'); d.className='suggest-item';
     d.textContent=m;
-    d.addEventListener('click',()=>{ rowState[idx].hours=m; inputEl.value=m; closeSuggests(); });
+    const pick = ()=>{ rowState[idx].hours=m; inputEl.value=m; closeSuggests(); };
+    d.addEventListener('mousedown', e=>{ e.preventDefault(); pick(); });
+    d.addEventListener('touchend',  e=>{ e.preventDefault(); pick(); });
     box.appendChild(d);
   });
   positionSuggest(box, inputEl);
@@ -1195,15 +1210,28 @@ function render(){
   rowState.forEach((r,idx)=>{
     const tr=document.createElement('tr');
     if(r.holiday) tr.classList.add('holiday');
+    // Animasi fade-in untuk baris yang baru toggle status-nya
+    tr.style.transition='opacity .25s ease, background .25s ease';
+
+    // Tombol toggle libur/hari kerja — muncul di kolom Aksi semua baris
+    const isWeekend = _WEEKEND.includes(r.day);
+    const isNatHoliday = r.nationalHoliday || false; // hari libur nasional, tidak bisa di-toggle
+    const toggleBtn = isNatHoliday
+      ? `<span title="${r.holidayName||'Libur Nasional'}" style="font-size:9px;color:#D8455B;white-space:nowrap;">🏛 Libur</span>`
+      : `<button class="toggleHolidayBtn" data-idx="${idx}" title="${r.holiday?'Tandai sebagai Hari Kerja':'Tandai sebagai Hari Libur'}"
+           style="font-size:9.5px;padding:2px 7px;border-radius:6px;border:1px solid ${r.holiday?'#BBF7D0':'#FECDD3'};background:${r.holiday?'#F0FDF4':'#FFF1F2'};color:${r.holiday?'#15803D':'#BE123C'};cursor:pointer;white-space:nowrap;">
+           ${r.holiday?'→ Kerja':'→ Libur'}
+         </button>`;
 
     if(r.holiday){
+      const hlabel = r.holidayName ? `<span style="font-size:9px;color:#D8455B;"> (${r.holidayName})</span>` : '';
       tr.innerHTML=`
         <td><input type="checkbox" class="rowChk"></td>
         <td>${idx+1}</td>
-        <td class="datecell">${r.date}<br><span class="text-[10px]">${r.day}</span></td>
+        <td class="datecell">${r.date}<br><span class="text-[10px]">${r.day}${hlabel}</span></td>
         <td data-label="Project ID">-</td><td data-label="Project Name">-</td><td data-label="Phase">-</td><td data-label="Customer">-</td>
-        <td data-label="Aktivitas">Hari Libur</td><td data-label="Lokasi">${r.location||'-'}</td><td data-label="Jam">${r.hours||'-'}</td><td data-label="Mandays">${r.day}</td>
-        <td><i data-lucide="minus" class="w-3.5 h-3.5 text-slate-300"></i></td>`;
+        <td data-label="Aktivitas">Hari Libur</td><td data-label="Lokasi">-</td><td data-label="Jam">-</td><td data-label="Mandays">-</td>
+        <td style="white-space:nowrap;">${toggleBtn}</td>`;
     } else {
       // Semua baris non-holiday selalu editable
       // filled hanya untuk warna latar belakang (hijau muda kalau sudah dari Sheets)
@@ -1232,11 +1260,16 @@ function render(){
         <td data-label="Lokasi" style="${rowBg}"><input class="loc-input" data-idx="${idx}" value="${r.location||''}" placeholder="Pilih lokasi..." autocomplete="off"></td>
         <td data-label="Jam" style="${rowBg}"><input class="hrs-input" data-idx="${idx}" value="${r.hours||''}" placeholder="08:30 - 17:30" autocomplete="off"></td>
         <td data-label="Mandays" style="${rowBg}">${r.mandays||''}</td>
-        <td style="${rowBg}" class="flex gap-2">
-          <i data-lucide="copy" class="w-3.5 h-3.5 cursor-pointer text-blue-500 copyRow" data-idx="${idx}" title="Copy ke baris berikutnya"></i>
-          <i data-lucide="trash-2" class="w-3.5 h-3.5 cursor-pointer text-red-500 delRow" data-idx="${idx}" title="Hapus & sync ke Sheets"></i>
+        <td style="${rowBg};white-space:nowrap;">
+          <div class="flex gap-1 items-center flex-wrap">
+            ${toggleBtn}
+            <i data-lucide="copy" class="w-3.5 h-3.5 cursor-pointer text-blue-500 copyRow" data-idx="${idx}" title="Copy ke baris berikutnya"></i>
+            <i data-lucide="trash-2" class="w-3.5 h-3.5 cursor-pointer text-red-500 delRow" data-idx="${idx}" title="Hapus & sync ke Sheets"></i>
+          </div>
         </td>`;
     }
+    // Animasi fade-in ringan untuk setiap baris
+    tr.classList.add('row-fade-in');
     tsBody.appendChild(tr);
   });
   lucide.createIcons();
@@ -1245,42 +1278,49 @@ function render(){
 }
 
 function attachHandlers(){
-  // PID input (unfilled rows)
-  document.querySelectorAll('.pid-input').forEach(inp=>{
-    inp.addEventListener('focus', e=>{ showPidSuggest(e.target, +e.target.dataset.idx); });
-    inp.addEventListener('input', e=>{
-      rowState[+e.target.dataset.idx].pid = e.target.value;
-      showPidSuggest(e.target, +e.target.dataset.idx);
+  // Helper: trigger suggest on both focus AND touchstart (mobile workaround)
+  function bindSuggest(selector, showFn, stateProp){
+    document.querySelectorAll(selector).forEach(inp=>{
+      const trigger = e=>{ if(stateProp==='activity') activeRowIdx=+e.target.dataset.idx; showFn(e.target, +e.target.dataset.idx); };
+      inp.addEventListener('focus', trigger);
+      // touchstart: mobile kadang gak fire focus sebelum keyboard muncul
+      inp.addEventListener('touchstart', e=>{ setTimeout(()=>showFn(e.target, +e.target.dataset.idx), 100); }, {passive:true});
+      inp.addEventListener('input', e=>{
+        if(stateProp) rowState[+e.target.dataset.idx][stateProp] = e.target.value;
+        showFn(e.target, +e.target.dataset.idx);
+      });
+      if(stateProp==='location'||stateProp==='hours'){
+        inp.addEventListener('change', e=>{ rowState[+e.target.dataset.idx][stateProp] = e.target.value; });
+      }
     });
-  });
+  }
 
-  // Activity input
-  document.querySelectorAll('.act-input').forEach(inp=>{
-    inp.addEventListener('focus', e=>{ activeRowIdx=+e.target.dataset.idx; showActSuggest(e.target, +e.target.dataset.idx); });
-    inp.addEventListener('input', e=>{
-      rowState[+e.target.dataset.idx].activity = e.target.value;
-      showActSuggest(e.target, +e.target.dataset.idx);
-    });
-  });
+  bindSuggest('.pid-input',  showPidSuggest,  'pid');
+  bindSuggest('.act-input',  showActSuggest,  'activity');
+  bindSuggest('.loc-input',  showLocSuggest,  'location');
+  bindSuggest('.hrs-input',  showHrsSuggest,  'hours');
 
-  // Location input
-  document.querySelectorAll('.loc-input').forEach(inp=>{
-    inp.addEventListener('focus', e=>{ showLocSuggest(e.target, +e.target.dataset.idx); });
-    inp.addEventListener('input', e=>{
-      rowState[+e.target.dataset.idx].location = e.target.value;
-      showLocSuggest(e.target, +e.target.dataset.idx);
+  // Toggle Libur / Hari Kerja
+  document.querySelectorAll('.toggleHolidayBtn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const idx = +btn.dataset.idx;
+      const r = rowState[idx];
+      if(r.nationalHoliday) return; // libur nasional tidak bisa di-toggle
+      // Animasi fade: redup dulu, lalu ubah state, lalu terang kembali
+      const tr = tsBody.querySelectorAll('tr')[idx];
+      if(tr){ tr.style.opacity='0.3'; }
+      setTimeout(()=>{
+        const wasHoliday = r.holiday;
+        r.holiday = !wasHoliday;
+        r.filled  = r.holiday;
+        if(r.holiday){
+          // Reset data kalau di-set jadi libur
+          r.pid=null; r.activity=null; r.location=null; r.hours=null; r.mandays=0;
+        }
+        showToast(r.holiday ? '🏖 Ditandai sebagai Hari Libur' : '💼 Ditandai sebagai Hari Kerja', r.holiday ? 'info' : 'ok');
+        render();
+      }, 200);
     });
-    inp.addEventListener('change', e=>{ rowState[+e.target.dataset.idx].location = e.target.value; });
-  });
-
-  // Hours input
-  document.querySelectorAll('.hrs-input').forEach(inp=>{
-    inp.addEventListener('focus', e=>{ showHrsSuggest(e.target, +e.target.dataset.idx); });
-    inp.addEventListener('input', e=>{
-      rowState[+e.target.dataset.idx].hours = e.target.value;
-      showHrsSuggest(e.target, +e.target.dataset.idx);
-    });
-    inp.addEventListener('change', e=>{ rowState[+e.target.dataset.idx].hours = e.target.value; });
   });
 
   // Open master modal from row button
