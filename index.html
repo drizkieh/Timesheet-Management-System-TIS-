@@ -1704,8 +1704,18 @@ function buildPrintTimesheetView(){
 function exportTimesheetPDF(){
   buildPrintTimesheetView();
   document.body.classList.add('printing-pv');
-  window.print();
-  setTimeout(()=>{ document.body.classList.remove('printing-pv'); }, 500);
+  // Hapus mode print HANYA setelah dialog print beneran selesai/ditutup —
+  // penting buat mobile (Android/iOS) yang dialog print-nya async, beda sama desktop.
+  const cleanup = ()=>{
+    document.body.classList.remove('printing-pv');
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  // Fallback kalau event afterprint gak sempat kepanggil di browser tertentu
+  const fallback = setTimeout(cleanup, 15000);
+  window.addEventListener('afterprint', ()=>clearTimeout(fallback));
+  // Beri jeda dikit biar browser sempat re-render sebelum print dialog dibuka
+  setTimeout(()=>{ window.print(); }, 150);
 }
 document.getElementById('btnExportPDF').addEventListener('click', exportTimesheetPDF);
 
