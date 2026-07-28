@@ -1072,8 +1072,14 @@ let activeRowIdx    = null;
 
 // Bangun rowState dari semua tanggal bulan berjalan — kosong, nunggu data dari Sheets
 const _MONTH_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const _MONTH_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const _DAY_ID   = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 const _WEEKEND  = ['Sabtu','Minggu'];
+// Kunci tanggal dipakai buat cocokkan data dari Sheets — HARUS pakai singkatan
+// bulan Inggris karena formatSheetDate() di Code.gs juga pakai bulan Inggris.
+function sheetDateKey(year, month, day){
+  return `${day} ${_MONTH_EN[month-1]} ${year}`;
+}
 function buildEmptyRowState(yearMonth){
   const [y,m] = yearMonth.split('-').map(Number);
   const total  = new Date(y, m, 0).getDate();
@@ -1081,7 +1087,7 @@ function buildEmptyRowState(yearMonth){
   for(let d=1; d<=total; d++){
     const dt      = new Date(y, m-1, d);
     const dayName = _DAY_ID[dt.getDay()];
-    const dateStr = `${d} ${_MONTH_ID[m-1].slice(0,3)} ${y}`;
+    const dateStr = sheetDateKey(y, m, d); // FIX: dulu pakai _MONTH_ID (Indonesia), mismatch sama backend untuk Mei/Agustus/Oktober/Desember
     const isWeekend = _WEEKEND.includes(dayName);
     rows.push({ date:dateStr, day:dayName,
       pid:null, activity:null, location:null, hours:null, mandays:0,
@@ -1704,22 +1710,22 @@ const APPROVAL_PROJECT_MANAGER = 'Jodie Satria Effendi';
 const APPROVAL_DEPT_HEAD       = 'Wisnu Hendra Pratama';
 const APPROVAL_DIVISION_HEAD   = 'Agus Triyanto';
 
-function buildPrintTimesheetView(){
-  document.getElementById('pvConsultant').textContent = (CURRENT_USER && CURRENT_USER.fullname) || CONSULTANT_NAME || '-';
-  document.getElementById('pvPosition').textContent    = (CURRENT_USER && CURRENT_USER.position) || '-';
-  document.getElementById('pvProject').textContent     = (CURRENT_USER && CURRENT_USER.project) || '-';
-  const [y0,m0] = CURRENT_MONTH.split('-').map(Number);
-  const monthEn = new Date(y0, m0-1, 1).toLocaleDateString('en-US',{month:'long'});
-  document.getElementById('pvMonthYear').textContent = `${monthEn} ${y0}`;
-  document.getElementById('pvSignConsultant').textContent = (CURRENT_USER && CURRENT_USER.fullname) || CONSULTANT_NAME || '-';
+// Isi template #pvRoot dari data apa pun (rowState personal ATAU rows hasil
+// fetch admin untuk consultant tertentu). year/month dipakai buat hitung
+// tanggal Inggris per baris (baris ke-idx = tanggal idx+1 di bulan itu).
+function renderPrintDocument({consultant, position, project, customer, monthYearLabel, year, month, rows}){
+  document.getElementById('pvConsultant').textContent = consultant || '-';
+  document.getElementById('pvPosition').textContent    = position || '-';
+  document.getElementById('pvProject').textContent     = project || '-';
+  document.getElementById('pvMonthYear').textContent   = monthYearLabel || '-';
+  document.getElementById('pvSignConsultant').textContent = consultant || '-';
   document.getElementById('pvSignPM').textContent       = APPROVAL_PROJECT_MANAGER;
   document.getElementById('pvSignDeptHead').textContent  = APPROVAL_DEPT_HEAD;
   document.getElementById('pvSignDivHead').textContent   = APPROVAL_DIVISION_HEAD;
 
-  const [y,m] = CURRENT_MONTH.split('-').map(Number);
   const tbody = document.getElementById('pvTbody');
   tbody.innerHTML = '';
-  rowState.forEach((r,idx)=>{
+  rows.forEach((r,idx)=>{
     const p = r.pid ? (PROJECTS[r.pid]||{}) : {};
     const shaded = idx % 2 === 1;
     const bg = shaded ? '#DCE6F5' : '#FFFFFF';
@@ -1727,17 +1733,31 @@ function buildPrintTimesheetView(){
     const tr = document.createElement('tr');
     tr.style.background = bg;
     const cell = (val)=>`<td style="border:1px solid #ccc;padding:4px 3px;vertical-align:top;${bold}">${val}</td>`;
-    const dObj = new Date(y, m-1, idx+1);
+    const dObj = new Date(year, month-1, idx+1);
     const dateEn = dObj.toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
     const mandaysVal = r.holiday ? '-' : (r.mandays || (r.filled ? 1 : '-'));
     tr.innerHTML =
       cell(idx+1) + cell(dateEn) + cell(r.pid||'-') +
-      cell((p.name&&p.name!=='-') ? p.name : '-') +
+      cell((p.name&&p.name!=='-') ? p.name : (r.projectName||'-')) +
       cell((p.phase&&p.phase!=='-') ? p.phase : '-') +
-      cell((p.customer&&p.customer!=='-') ? p.customer : '-') +
+      cell((p.customer&&p.customer!=='-') ? p.customer : (customer||'-')) +
       cell(r.holiday ? 'Hari Libur' : (r.activity||'-')) +
       cell(r.location||'-') + cell(r.hours||'-') + cell(mandaysVal);
     tbody.appendChild(tr);
+  });
+}
+
+function buildPrintTimesheetView(){
+  const [y,m] = CURRENT_MONTH.split('-').map(Number);
+  const monthEn = new Date(y, m-1, 1).toLocaleDateString('en-US',{month:'long'});
+  renderPrintDocument({
+    consultant: (CURRENT_USER && CURRENT_USER.fullname) || CONSULTANT_NAME || '-',
+    position:   (CURRENT_USER && CURRENT_USER.position) || '-',
+    project:    (CURRENT_USER && CURRENT_USER.project) || '-',
+    customer:   '-',
+    monthYearLabel: `${monthEn} ${y}`,
+    year: y, month: m,
+    rows: rowState
   });
 }
 
@@ -1809,16 +1829,90 @@ async function loadAdminData(){
 document.getElementById('btnAdminRefresh').addEventListener('click', loadAdminData);
 document.getElementById('adminFilterUser').addEventListener('change', loadAdminData);
 document.getElementById('adminFilterMonth').addEventListener('change', loadAdminData);
-document.getElementById('btnAdminPrint').addEventListener('click', ()=>{
-  const sel   = document.getElementById('adminFilterUser');
-  const selM  = document.getElementById('adminFilterMonth');
-  const uname = sel.value || 'Semua Consultant';
-  const month = selM.options[selM.selectedIndex].text;
-  document.getElementById('printSubtitle').textContent = `${uname} · ${month}`;
-  document.getElementById('printHeader').style.display = 'block';
-  window.print();
-  setTimeout(()=>{ document.getElementById('printHeader').style.display='none'; }, 1500);
-});
+// Susun rows sejumlah hari dalam sebulan dari entri timesheet 1 consultant
+// (hasil getAllTimesheet), sama persis logikanya dengan applySheetTimesheet
+// di halaman Input Timesheet — supaya format cetaknya identik.
+function buildDayRowsFromEntries(year, month, entries){
+  const total = new Date(year, month, 0).getDate();
+  const rows  = [];
+  for(let d=1; d<=total; d++){
+    const dt        = new Date(year, month-1, d);
+    const dayName   = _DAY_ID[dt.getDay()];
+    const isWeekend = _WEEKEND.includes(dayName);
+    rows.push({ date: sheetDateKey(year, month, d), day: dayName,
+      pid:null, activity:null, location:null, hours:null, mandays:0,
+      holiday:isWeekend, filled:isWeekend });
+  }
+  entries.forEach(entry=>{
+    if(!entry.Date) return;
+    const row = rows.find(r=>matchDateLoose(r.date, entry.Date));
+    if(row && !row.holiday){
+      row.pid      = entry.ProjectID || '';
+      row.activity = entry.Activity  || '';
+      row.location = entry.Location  || '';
+      row.hours    = entry.Hours     || '';
+      row.mandays  = parseFloat(entry.Mandays) || 1.0;
+      row.filled   = !!entry.ProjectID;
+    }
+  });
+  return rows;
+}
+
+async function exportAdminTimesheetPDF(){
+  const sel  = document.getElementById('adminFilterUser');
+  const selM = document.getElementById('adminFilterMonth');
+  const consultant = sel.value;
+  const month       = selM.value;
+
+  if(!consultant){
+    showToast('Pilih salah satu consultant dulu di filter untuk cetak PDF timesheet-nya.','err');
+    return;
+  }
+  if(!APPS_SCRIPT_URL){ showToast('Belum tersambung ke Google Sheets.','err'); return; }
+
+  const btn = document.getElementById('btnAdminPrint');
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Menyiapkan PDF...';
+
+  try{
+    const [users, entries] = await Promise.all([
+      fetch(`${APPS_SCRIPT_URL}?action=getUsers`).then(r=>r.json()),
+      fetch(`${APPS_SCRIPT_URL}?action=getAllTimesheet&consultant=${encodeURIComponent(consultant)}&month=${month}`).then(r=>r.json())
+    ]);
+    const userMeta = Array.isArray(users) ? users.find(u=>u.FullName===consultant) : null;
+    const [y,m] = month.split('-').map(Number);
+    const monthEn = new Date(y, m-1, 1).toLocaleDateString('en-US',{month:'long'});
+    const rows = buildDayRowsFromEntries(y, m, Array.isArray(entries) ? entries : []);
+
+    renderPrintDocument({
+      consultant: consultant,
+      position:   (userMeta && userMeta.Position) || '-',
+      project:    (userMeta && userMeta.Project)  || '-',
+      customer:   '-',
+      monthYearLabel: `${monthEn} ${y}`,
+      year: y, month: m,
+      rows: rows
+    });
+
+    document.body.classList.add('printing-pv');
+    const cleanup = ()=>{
+      document.body.classList.remove('printing-pv');
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    const fallback = setTimeout(cleanup, 15000);
+    window.addEventListener('afterprint', ()=>clearTimeout(fallback));
+    setTimeout(()=>{ window.print(); }, 150);
+  }catch(err){
+    console.error(err);
+    showToast('Gagal menyiapkan PDF timesheet.','err');
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+  }
+}
+document.getElementById('btnAdminPrint').addEventListener('click', exportAdminTimesheetPDF);
 
 // =========================================================
 // NAV VIEW SWITCHING (admin tambahan)
