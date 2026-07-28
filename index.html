@@ -152,7 +152,11 @@ html,body{overflow-x:hidden;max-width:100%;}
   #loginPage,aside,header,.no-print,#adminTabUsers{display:none!important;}
   #printHeader{display:block!important;}
   body{background:#fff;}
+  body.printing-pv main{padding:0!important;}
+  body.printing-pv main > *:not(#pvRoot){display:none!important;}
+  body.printing-pv #pvRoot{display:block!important;padding:20px;background:#fff;}
 }
+#pvRoot{display:none;}
 
 @media (max-width:1023px){
   aside{
@@ -361,6 +365,7 @@ html,body{overflow-x:hidden;max-width:100%;}
                 <span class="w-px h-5 bg-slate-200 mx-1"></span>
                 <button class="btn btn-outline"><i data-lucide="upload" class="w-3.5 h-3.5"></i>Import dari Excel</button>
                 <button class="btn btn-blue" id="btnExport"><i data-lucide="download" class="w-3.5 h-3.5"></i>Export Excel</button>
+                <button class="btn btn-outline" id="btnExportPDF" style="color:#DC2626;"><i data-lucide="file-text" class="w-3.5 h-3.5"></i>Export PDF</button>
               </div>
             </div>
 
@@ -565,6 +570,124 @@ html,body{overflow-x:hidden;max-width:100%;}
       </div>
     </div>
 
+    <!-- ============ PRINT TEMPLATE: TIMESHEET (persis template resmi) ============ -->
+    <div id="pvRoot">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+        <div>
+          <div style="border:2.5px solid #000;display:inline-block;padding:8px 30px;font-weight:800;font-size:20px;letter-spacing:.02em;">TIMESHEET</div>
+          <table style="margin-top:14px;font-size:11.5px;border-collapse:collapse;">
+            <tr><td style="font-weight:700;padding:2px 14px 2px 0;">Consultant Name</td><td id="pvConsultant" style="padding:2px 0;"></td></tr>
+            <tr><td style="font-weight:700;padding:2px 14px 2px 0;">Position</td><td id="pvPosition" style="padding:2px 0;"></td></tr>
+            <tr><td style="font-weight:700;padding:2px 14px 2px 0;">Project</td><td id="pvProject" style="padding:2px 0;"></td></tr>
+            <tr><td style="font-weight:700;padding:2px 14px 2px 0;">Month / Year</td><td id="pvMonthYear" style="padding:2px 0;"></td></tr>
+          </table>
+        </div>
+        <div style="text-align:right;padding-top:4px;">
+          <div style="display:inline-flex;align-items:center;gap:8px;">
+            <div style="width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#F59E0B,#EF4444);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#fff;">I</div>
+            <div style="text-align:left;">
+              <div style="font-weight:800;font-size:15px;color:#0E1730;line-height:1;">INTEGRA</div>
+              <div style="font-size:8px;color:#5A6479;letter-spacing:.12em;">SOLUSI MANDIRI</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;font-size:9.5px;table-layout:fixed;">
+        <colgroup>
+          <col style="width:3%;"><col style="width:8%;"><col style="width:11%;"><col style="width:10%;">
+          <col style="width:9%;"><col style="width:10%;"><col style="width:29%;"><col style="width:8%;">
+          <col style="width:6%;"><col style="width:6%;">
+        </colgroup>
+        <thead>
+          <tr style="background:#2E5AA8;color:#fff;">
+            <th style="border:1px solid #1a3d78;padding:5px 3px;">No</th>
+            <th style="border:1px solid #1a3d78;padding:5px 3px;">Date</th>
+            <th style="border:1px solid #1a3d78;padding:5px 3px;">Project ID</th>
+            <th style="border:1px solid #1a3d78;padding:5px 3px;">Project Name</th>
+            <th style="border:1px solid #1a3d78;padding:5px 3px;">Project Phase</th>
+            <th style="border:1px solid #1a3d78;padding:5px 3px;">Customer</th>
+            <th style="border:1px solid #1a3d78;padding:5px 3px;">Activity Description<br><span style="font-weight:400;font-size:8px;">(to be completed by consultant)</span></th>
+            <th style="border:1px solid #1a3d78;padding:5px 3px;">Location</th>
+            <th style="border:1px solid #1a3d78;padding:5px 3px;">Billable Hours</th>
+            <th style="border:1px solid #1a3d78;padding:5px 3px;">Mandays</th>
+          </tr>
+        </thead>
+        <tbody id="pvTbody"></tbody>
+      </table>
+
+      <table style="margin-top:14px;font-size:9.5px;border-collapse:collapse;width:60%;">
+        <tr style="background:#F5B942;">
+          <td style="border:1px solid #999;padding:3px 8px;font-weight:700;width:16%;">Others - Project ID</td>
+          <td style="border:1px solid #999;padding:3px 8px;font-weight:700;width:24%;">Description</td>
+          <td style="border:1px solid #999;padding:3px 8px;font-weight:700;width:16%;">Others - Project ID</td>
+          <td style="border:1px solid #999;padding:3px 8px;font-weight:700;width:44%;">Description</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid #ccc;padding:3px 8px;font-weight:700;">Holiday</td>
+          <td style="border:1px solid #ccc;padding:3px 8px;">Sabtu/Minggu<br>Libur (Kalender)</td>
+          <td style="border:1px solid #ccc;padding:3px 8px;font-weight:700;">Internal Meeting</td>
+          <td style="border:1px solid #ccc;padding:3px 8px;">Internal meeting, coordination, project preparation, etc</td>
+        </tr>
+        <tr style="background:#F4F6FB;">
+          <td style="border:1px solid #ccc;padding:3px 8px;font-weight:700;">Sick Leave</td>
+          <td style="border:1px solid #ccc;padding:3px 8px;">Izin Sakit</td>
+          <td style="border:1px solid #ccc;padding:3px 8px;font-weight:700;">External Meeting</td>
+          <td style="border:1px solid #ccc;padding:3px 8px;">Presentation, meeting w/ external</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid #ccc;padding:3px 8px;font-weight:700;">Permission Leave</td>
+          <td style="border:1px solid #ccc;padding:3px 8px;">Cuti/Izin</td>
+          <td style="border:1px solid #ccc;padding:3px 8px;font-weight:700;">Timesheet</td>
+          <td style="border:1px solid #ccc;padding:3px 8px;">Timesheet record &amp; Submit</td>
+        </tr>
+        <tr style="background:#F4F6FB;">
+          <td style="border:1px solid #ccc;padding:3px 8px;font-weight:700;">Idle</td>
+          <td style="border:1px solid #ccc;padding:3px 8px;">Idle/No Client</td>
+          <td style="border:1px solid #ccc;padding:3px 8px;font-weight:700;">Learning/Training</td>
+          <td style="border:1px solid #ccc;padding:3px 8px;">Self Learning &amp; Development</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid #ccc;padding:3px 8px;font-weight:700;color:#DC2626;">NONA</td>
+          <td style="border:1px solid #ccc;padding:3px 8px;color:#DC2626;">No news in attendance</td>
+          <td style="border:1px solid #ccc;padding:3px 8px;font-weight:700;">Standby Support</td>
+          <td style="border:1px solid #ccc;padding:3px 8px;">Standby customer support</td>
+        </tr>
+      </table>
+
+      <table style="margin-top:36px;width:100%;font-size:10.5px;border-collapse:collapse;">
+        <tr>
+          <td style="width:22%;border:1px solid #000;text-align:center;font-weight:700;padding:6px;">Prepare By</td>
+          <td style="width:6%;border:none;"></td>
+          <td style="width:22%;border:1px solid #000;text-align:center;font-weight:700;padding:6px;">Proposed by,</td>
+          <td style="width:22%;border:1px solid #000;text-align:center;font-weight:700;padding:6px;">Approved by,</td>
+          <td style="width:22%;border:1px solid #000;text-align:center;font-weight:700;padding:6px;">Approved by,</td>
+        </tr>
+        <tr>
+          <td style="border-left:1px solid #000;border-right:1px solid #000;height:60px;"></td>
+          <td></td>
+          <td style="border-left:1px solid #000;border-right:1px solid #000;"></td>
+          <td style="border-left:1px solid #000;border-right:1px solid #000;"></td>
+          <td style="border-left:1px solid #000;border-right:1px solid #000;"></td>
+        </tr>
+        <tr>
+          <td style="border:1px solid #000;border-top:none;text-align:center;font-weight:700;padding:6px;" id="pvSignConsultant"></td>
+          <td></td>
+          <td style="border:1px solid #000;border-top:none;text-align:center;padding:6px;">
+            <div style="font-weight:700;" id="pvSignPM"></div>
+            <div style="font-size:9.5px;">Project Manager</div>
+          </td>
+          <td style="border:1px solid #000;border-top:none;text-align:center;padding:6px;">
+            <div style="font-weight:700;" id="pvSignDeptHead"></div>
+            <div style="font-size:9.5px;">TIS Delivery Dept Head</div>
+          </td>
+          <td style="border:1px solid #000;border-top:none;text-align:center;padding:6px;">
+            <div style="font-weight:700;" id="pvSignDivHead"></div>
+            <div style="font-size:9.5px;">Division Head</div>
+          </td>
+        </tr>
+      </table>
+    </div>
     </main>
   </div>
 </div>
@@ -1532,6 +1655,59 @@ async function exportTimesheet(){
   URL.revokeObjectURL(url);
 }
 document.getElementById('btnExport').addEventListener('click',exportTimesheet);
+
+// =========================================================
+// EXPORT PDF (via browser print, template resmi Integra)
+// =========================================================
+// Nama approver default — sesuaikan kalau beda per project/consultant
+const APPROVAL_PROJECT_MANAGER = 'Jodie Satria Effendi';
+const APPROVAL_DEPT_HEAD       = 'Wisnu Hendra Pratama';
+const APPROVAL_DIVISION_HEAD   = 'Agus Triyanto';
+
+function buildPrintTimesheetView(){
+  document.getElementById('pvConsultant').textContent = (CURRENT_USER && CURRENT_USER.fullname) || CONSULTANT_NAME || '-';
+  document.getElementById('pvPosition').textContent    = (CURRENT_USER && CURRENT_USER.position) || '-';
+  document.getElementById('pvProject').textContent     = (CURRENT_USER && CURRENT_USER.project) || '-';
+  const [y0,m0] = CURRENT_MONTH.split('-').map(Number);
+  const monthEn = new Date(y0, m0-1, 1).toLocaleDateString('en-US',{month:'long'});
+  document.getElementById('pvMonthYear').textContent = `${monthEn} ${y0}`;
+  document.getElementById('pvSignConsultant').textContent = (CURRENT_USER && CURRENT_USER.fullname) || CONSULTANT_NAME || '-';
+  document.getElementById('pvSignPM').textContent       = APPROVAL_PROJECT_MANAGER;
+  document.getElementById('pvSignDeptHead').textContent  = APPROVAL_DEPT_HEAD;
+  document.getElementById('pvSignDivHead').textContent   = APPROVAL_DIVISION_HEAD;
+
+  const [y,m] = CURRENT_MONTH.split('-').map(Number);
+  const tbody = document.getElementById('pvTbody');
+  tbody.innerHTML = '';
+  rowState.forEach((r,idx)=>{
+    const p = r.pid ? (PROJECTS[r.pid]||{}) : {};
+    const shaded = idx % 2 === 1;
+    const bg = shaded ? '#DCE6F5' : '#FFFFFF';
+    const bold = r.holiday ? 'font-weight:700;' : '';
+    const tr = document.createElement('tr');
+    tr.style.background = bg;
+    const cell = (val)=>`<td style="border:1px solid #ccc;padding:4px 3px;vertical-align:top;${bold}">${val}</td>`;
+    const dObj = new Date(y, m-1, idx+1);
+    const dateEn = dObj.toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+    const mandaysVal = r.holiday ? '-' : (r.mandays || (r.filled ? 1 : '-'));
+    tr.innerHTML =
+      cell(idx+1) + cell(dateEn) + cell(r.pid||'-') +
+      cell((p.name&&p.name!=='-') ? p.name : '-') +
+      cell((p.phase&&p.phase!=='-') ? p.phase : '-') +
+      cell((p.customer&&p.customer!=='-') ? p.customer : '-') +
+      cell(r.holiday ? 'Hari Libur' : (r.activity||'-')) +
+      cell(r.location||'-') + cell(r.hours||'-') + cell(mandaysVal);
+    tbody.appendChild(tr);
+  });
+}
+
+function exportTimesheetPDF(){
+  buildPrintTimesheetView();
+  document.body.classList.add('printing-pv');
+  window.print();
+  setTimeout(()=>{ document.body.classList.remove('printing-pv'); }, 500);
+}
+document.getElementById('btnExportPDF').addEventListener('click', exportTimesheetPDF);
 
 // =========================================================
 // ADMIN PANEL
