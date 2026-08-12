@@ -286,7 +286,11 @@ html,body{overflow-x:hidden;max-width:100%;}
         <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="database" class="w-4 h-4"></i>Master Data</div>
         <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="bar-chart-3" class="w-4 h-4"></i>Report</div>
         <div id="navApprovalMenu" style="display:none;">
+<<<<<<< HEAD
           <div class="nav-item" data-view="approval" style="color:#22C55E;"><i data-lucide="check-check" class="w-4 h-4"></i>Approval<span id="navApprovalBadge" style="display:none;margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span></div>
+=======
+          <div class="nav-item" data-view="approval" style="color:#22C55E;"><i data-lucide="check-check" class="w-4 h-4"></i>Approval</div>
+>>>>>>> 1f00892bef5a253a550e1cb999a6c98c88f38e9a
         </div>
         <div id="navAdminMenu" style="display:none;border-top:1px solid #1B2547;margin-top:8px;padding-top:8px;">
           <div class="nav-item" data-view="admin" style="color:#F59E0B;"><i data-lucide="shield" class="w-4 h-4"></i>Admin Panel</div>
@@ -311,7 +315,11 @@ html,body{overflow-x:hidden;max-width:100%;}
         <h1 class="text-lg font-bold" id="pageTitle">Dashboard</h1>
       </div>
       <div class="flex items-center gap-4">
+<<<<<<< HEAD
         <div id="topbarPeriodChip" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium" style="background:#F4F6FB;border:1px solid var(--border);cursor:pointer;" title="Klik untuk ganti periode timesheet"><i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i><span id="topbarPeriodLabel">-</span><i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i></div>
+=======
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium" style="background:#F4F6FB;border:1px solid var(--border);"><i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>Juli 2026<i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i></div>
+>>>>>>> 1f00892bef5a253a550e1cb999a6c98c88f38e9a
         <button id="btnConnectSheet" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#FEF2E3;color:#92680B;border:1px solid #F5E6A8;"><i data-lucide="plug-zap" class="w-3.5 h-3.5"></i><span id="connStatus">Sambungkan Google Sheets</span></button>
         <button id="btnMasterDataOpen" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#F2ECFE;color:#6D28D9;border:1px solid #DDD6FE;"><i data-lucide="database" class="w-3.5 h-3.5"></i>Master Data</button>
         <div class="relative"><i data-lucide="bell" class="w-5 h-5 text-slate-500"></i><span class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold">5</span></div>
@@ -1125,8 +1133,11 @@ function updateInfoCard(){
   if(monthEl){
     monthEl.textContent = periodLabel(CURRENT_PERIOD);
   }
+<<<<<<< HEAD
   const topbarLabelEl = document.getElementById('topbarPeriodLabel');
   if(topbarLabelEl) topbarLabelEl.textContent = periodLabel(CURRENT_PERIOD);
+=======
+>>>>>>> 1f00892bef5a253a550e1cb999a6c98c88f38e9a
   // Customer dicari dari master project (PROJECTS) berdasarkan nama Project user
   let customer = CURRENT_USER.customer || '';
   if(!customer && CURRENT_USER.project && typeof PROJECTS !== 'undefined'){
@@ -1394,9 +1405,12 @@ function renderMyPeriodHistory(){
   lucide.createIcons();
   wrap.querySelectorAll('.myPeriodPrintBtn').forEach(btn=>{
     btn.addEventListener('click', ()=>printSubmission(btn.dataset.id));
+<<<<<<< HEAD
   });
   wrap.querySelectorAll('.myPeriodRevisiBtn').forEach(btn=>{
     btn.addEventListener('click', ()=>openRevisiModal(btn.dataset.id, btn.dataset.start, btn.dataset.end));
+=======
+>>>>>>> 1f00892bef5a253a550e1cb999a6c98c88f38e9a
   });
 }
 // Bikin panel "Alur Approval" jadi hidup: tahap yang sedang berjalan di-highlight
@@ -2304,7 +2318,10 @@ function findSubmissionForPeriod(list, period){
 // susun baris harian, render, lalu print.
 async function printSubmission(submissionId){
   if(!APPS_SCRIPT_URL || !submissionId) return;
+<<<<<<< HEAD
   showPdfLoading();
+=======
+>>>>>>> 1f00892bef5a253a550e1cb999a6c98c88f38e9a
   try{
     const detail = await fetch(`${APPS_SCRIPT_URL}?action=getSubmissionDetail&submissionId=${encodeURIComponent(submissionId)}`).then(r=>r.json());
     if(detail.error){ showToast(detail.error,'err'); return; }
@@ -2327,8 +2344,11 @@ async function printSubmission(submissionId){
   }catch(err){
     console.error(err);
     showToast('Gagal menyiapkan PDF timesheet.','err');
+<<<<<<< HEAD
   }finally{
     hidePdfLoading();
+=======
+>>>>>>> 1f00892bef5a253a550e1cb999a6c98c88f38e9a
   }
 }
 
@@ -2882,7 +2902,6 @@ function closePeriodeModal(){
   document.getElementById('modalPeriode').style.display = 'none';
 }
 document.getElementById('btnGantiPeriode').addEventListener('click', openPeriodeModal);
-document.getElementById('topbarPeriodChip').addEventListener('click', openPeriodeModal);
 document.getElementById('btnModalPeriodeClose').addEventListener('click', closePeriodeModal);
 document.getElementById('btnModalPeriodeCancel').addEventListener('click', closePeriodeModal);
 document.getElementById('modalPeriode').addEventListener('click', e=>{ if(e.target===document.getElementById('modalPeriode')) closePeriodeModal(); });
@@ -2944,12 +2963,16 @@ async function loadPendingApprovals(){
     const list = await fetch(url).then(r=>r.json());
     PENDING_APPROVALS = Array.isArray(list) ? list : [];
     renderApprovalList();
+<<<<<<< HEAD
     updateApprovalPendingBadges();
+=======
+>>>>>>> 1f00892bef5a253a550e1cb999a6c98c88f38e9a
   }catch(e){
     tbody.innerHTML = `<tr><td colspan="6" class="text-center text-red-400 py-6">Gagal memuat data approval.</td></tr>`;
   }
 }
 
+<<<<<<< HEAD
 // Nyalakan badge merah di nav item "Approval" & tab "Menunggu Approval" begitu
 // ada pengajuan yang masuk — biar approver langsung tahu tanpa harus buka tab-nya.
 function updateApprovalPendingBadges(){
@@ -2961,6 +2984,8 @@ function updateApprovalPendingBadges(){
   });
 }
 
+=======
+>>>>>>> 1f00892bef5a253a550e1cb999a6c98c88f38e9a
 async function loadApprovalHistory(){
   if(!APPS_SCRIPT_URL || !CURRENT_USER || !APPROVER_ROLES.includes(CURRENT_USER.role)) return;
   const tbody = document.getElementById('approvalHistoryTBody');
