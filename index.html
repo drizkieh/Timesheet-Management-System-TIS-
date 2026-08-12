@@ -280,7 +280,9 @@ html,body{overflow-x:hidden;max-width:100%;}
         <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="briefcase" class="w-4 h-4"></i>Project</div>
         <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="database" class="w-4 h-4"></i>Master Data</div>
         <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="bar-chart-3" class="w-4 h-4"></i>Report</div>
-        <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="check-check" class="w-4 h-4"></i>Approval</div>
+        <div id="navApprovalMenu" style="display:none;">
+          <div class="nav-item" data-view="approval" style="color:#22C55E;"><i data-lucide="check-check" class="w-4 h-4"></i>Approval</div>
+        </div>
         <div id="navAdminMenu" style="display:none;border-top:1px solid #1B2547;margin-top:8px;padding-top:8px;">
           <div class="nav-item" data-view="admin" style="color:#F59E0B;"><i data-lucide="shield" class="w-4 h-4"></i>Admin Panel</div>
         </div>
@@ -535,6 +537,88 @@ html,body{overflow-x:hidden;max-width:100%;}
         </div>
       </div>
     </section>
+
+    <!-- ============ APPROVAL VIEW (khusus role approver_pm / approver_depthead / approver_divhead) ============ -->
+    <section id="approvalView" style="display:none;">
+      <div id="approvalSignatureBanner" class="card p-4 mb-4" style="display:none;background:#FEF2E3;border-color:#F5E6A8;">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div class="flex items-center gap-2 text-[13px]" style="color:#92680B;"><i data-lucide="pen-tool" class="w-4 h-4"></i>Anda belum upload tanda tangan. Upload dulu supaya bisa dipakai otomatis saat Approve.</div>
+          <button class="btn btn-blue text-[11px]" id="btnOpenSignatureModal"><i data-lucide="upload" class="w-3.5 h-3.5"></i>Upload Tanda Tangan</button>
+        </div>
+      </div>
+
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <div>
+            <div class="text-base font-bold" id="approvalStageTitle">Menunggu Approval</div>
+            <div class="text-xs text-slate-400 mt-0.5" id="approvalStageDesc">Daftar timesheet yang menunggu review Anda</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="btn btn-outline text-[11px]" id="btnApprovalRefresh"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Refresh</button>
+            <button class="btn btn-gray text-[11px]" id="btnOpenSignatureModal2"><i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>Tanda Tangan Saya</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="ts"><thead><tr>
+            <th>Consultant</th><th>Project</th><th>Periode</th><th>Jumlah Hari</th><th>Aksi</th>
+          </tr></thead><tbody id="approvalTBody"></tbody></table>
+          <div id="approvalEmpty" class="hidden text-center py-8 text-slate-400 text-sm">Tidak ada timesheet yang menunggu approval Anda saat ini.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODAL DETAIL REVIEW APPROVAL -->
+    <div id="modalApprovalDetail" class="modal-overlay" style="display:none;">
+      <div class="modal-box" style="width:820px;">
+        <div class="modal-header">
+          <div>
+            <div class="font-bold text-base" id="approvalDetailTitle">Review Timesheet</div>
+            <div class="text-[11px] text-slate-400 mt-0.5" id="approvalDetailSub">-</div>
+          </div>
+          <button id="btnCloseApprovalDetail" style="background:none;border:none;cursor:pointer;"><i data-lucide="x" class="w-5 h-5 text-slate-400"></i></button>
+        </div>
+        <div class="modal-body">
+          <div style="overflow-x:auto;">
+            <table class="ts"><thead><tr>
+              <th>Date</th><th>Project</th><th>Activity</th><th>Location</th><th>Hours</th><th>Mandays</th>
+            </tr></thead><tbody id="approvalDetailTBody"></tbody></table>
+          </div>
+          <div class="mt-4" id="approvalHistoryWrap"></div>
+          <div class="mt-4">
+            <label class="text-[11px] font-semibold text-slate-500 block mb-1">Komentar (opsional untuk Approve, wajib untuk Reject)</label>
+            <textarea id="approvalComment" rows="2" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12.5px;" placeholder="Tulis catatan review..."></textarea>
+          </div>
+          <div id="approvalDetailError" style="color:#DC2626;font-size:12px;margin-top:6px;"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" id="btnCloseApprovalDetail2">Tutup</button>
+          <button class="btn text-white" style="background:var(--red);" id="btnRejectSubmission"><i data-lucide="x-circle" class="w-3.5 h-3.5"></i>Reject</button>
+          <button class="btn btn-green" id="btnApproveSubmission"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i>Approve</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL UPLOAD TANDA TANGAN -->
+    <div id="modalSignature" class="modal-overlay" style="display:none;">
+      <div class="modal-box" style="width:420px;">
+        <div class="modal-header">
+          <div class="font-bold text-base">Upload Tanda Tangan</div>
+          <button id="btnCloseSignatureModal" style="background:none;border:none;cursor:pointer;"><i data-lucide="x" class="w-5 h-5 text-slate-400"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="text-[12px] text-slate-500 mb-3">Upload gambar tanda tangan (PNG, background transparan lebih baik). Disimpan sekali — otomatis ditempel setiap kali Anda klik Approve.</div>
+          <input type="file" id="signatureFileInput" accept="image/png,image/jpeg" style="font-size:12px;">
+          <div id="signaturePreviewWrap" style="display:none;margin-top:12px;text-align:center;padding:12px;border:1px dashed var(--border);border-radius:10px;">
+            <img id="signaturePreviewImg" style="max-height:90px;max-width:100%;">
+          </div>
+          <div id="signatureError" style="color:#DC2626;font-size:12px;margin-top:8px;"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" id="btnCloseSignatureModal2">Batal</button>
+          <button class="btn btn-blue" id="btnSaveSignature"><i data-lucide="save" class="w-3.5 h-3.5"></i>Simpan Tanda Tangan</button>
+        </div>
+      </div>
+    </div>
 
     <!-- MODAL TAMBAH/EDIT USER -->
     <div id="modalUser" class="modal-overlay" style="display:none;">
@@ -848,6 +932,9 @@ function setLoadingProgress(pct, msg){
   if(msg) document.getElementById('loadingMsg').textContent = msg;
 }
 
+const APPROVER_ROLES  = ['approver_pm','approver_depthead','approver_divhead'];
+const APPROVER_LABELS = { approver_pm:'Approver - Project Manager', approver_depthead:'Approver - Dept Head', approver_divhead:'Approver - Division Head' };
+
 function initSession(user){
   CURRENT_USER    = user;
   CONSULTANT_NAME = user.fullname;
@@ -855,8 +942,29 @@ function initSession(user){
   document.getElementById('sidebar').classList.remove('pre-login-hidden');
   document.getElementById('appMain').classList.remove('pre-login-hidden');
   document.getElementById('sidebarName').textContent  = user.fullname;
-  document.getElementById('sidebarRole').textContent  = user.role === 'admin' ? 'Administrator' : 'Consultant';
   document.getElementById('userAvatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.fullname)}`;
+
+  const isApprover = APPROVER_ROLES.includes(user.role);
+  document.getElementById('sidebarRole').textContent = isApprover
+    ? (APPROVER_LABELS[user.role] || 'Approver')
+    : (user.role === 'admin' ? 'Administrator' : 'Consultant');
+
+  if(isApprover){
+    // Login approver hanya bisa lihat menu Approval (read-only review) — menu lain disembunyikan total
+    document.getElementById('navAdminMenu').style.display = 'none';
+    document.getElementById('navTimesheetGroup').style.display = 'none';
+    document.getElementById('navDashboardItem').style.display = 'none';
+    document.getElementById('navApprovalMenu').style.display = '';
+    document.getElementById('view-entry-wrap').style.display = 'none';
+    document.getElementById('adminView').style.display = 'none';
+    document.getElementById('approvalView').style.display = '';
+    document.getElementById('pageTitle').textContent = 'Approval';
+    document.getElementById('approvalSignatureBanner').style.display = user.hasSignature ? 'none' : '';
+    const stageLabel = {approver_pm:'Project Manager', approver_depthead:'Dept Head', approver_divhead:'Division Head'}[user.role] || '';
+    document.getElementById('approvalStageDesc').textContent = `Daftar timesheet yang menunggu review Anda selaku ${stageLabel}`;
+    loadPendingApprovals();
+    return; // approver tidak perlu load master project/timesheet consultant
+  }
   if(user.role === 'admin'){
     document.getElementById('navAdminMenu').style.display = '';
     // Admin gak perlu halaman Isi Timesheet — sembunyikan menu & dashboard entrinya
@@ -920,6 +1028,8 @@ function logout(){
   document.getElementById('loginPassword').value = '';
   document.getElementById('loginError').textContent = '';
   document.getElementById('navAdminMenu').style.display = 'none';
+  document.getElementById('navApprovalMenu').style.display = 'none';
+  document.getElementById('approvalView').style.display = 'none';
   document.getElementById('navTimesheetGroup').style.display = '';
   document.getElementById('navDashboardItem').style.display = '';
   ['infoConsultantName','infoCustomer','infoPosition','infoProject','infoMonthYear'].forEach(id=>{
@@ -1719,6 +1829,16 @@ async function saveToSheets(status){
     // tapi action itu gak pernah di-handle di Code.gs (selalu balas "Action tidak
     // dikenal") — dihapus karena Status per baris sudah ikut tersimpan lewat
     // saveTimesheet di atas (lihat buildTimesheetPayload(status)).
+    if(status === 'Submitted'){
+      // Buat/refresh record di sheet Submissions supaya masuk antrian Approval PM
+      await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({
+        action:'submitForApproval',
+        consultant: CONSULTANT_NAME,
+        project: CURRENT_USER ? CURRENT_USER.project : '',
+        periodStart: CURRENT_PERIOD.start,
+        periodEnd: CURRENT_PERIOD.end,
+      })}).catch(()=>{});
+    }
     showToast(status==='Draft'?'Draft tersimpan ke Google Sheets.':'Timesheet berhasil di-submit ke Project Manager.','ok');
     // Reload dari Sheets untuk konfirmasi data benar-benar sama
     await loadFromSheets();
@@ -2005,13 +2125,19 @@ document.querySelectorAll('.nav-item[data-view]').forEach(el=>{
     const view = el.dataset.view;
     const entryWrap = document.getElementById('view-entry-wrap');
     const adminWrap = document.getElementById('adminView');
+    const approvalWrap = document.getElementById('approvalView');
+    entryWrap.style.display = 'none';
+    adminWrap.style.display = 'none';
+    approvalWrap.style.display = 'none';
     if(view === 'admin'){
-      entryWrap.style.display = 'none';
       adminWrap.style.display = '';
       document.getElementById('pageTitle').textContent = 'Admin Panel';
       loadAdminData();
+    } else if(view === 'approval'){
+      approvalWrap.style.display = '';
+      document.getElementById('pageTitle').textContent = 'Approval';
+      loadPendingApprovals();
     } else {
-      adminWrap.style.display = 'none';
       entryWrap.style.display = '';
       document.getElementById('pageTitle').textContent = view==='entry'?'Input Timesheet':'Dashboard';
     }
@@ -2290,6 +2416,197 @@ document.getElementById('btnModalPeriodeApply').addEventListener('click', async 
   }catch(e){
     errEl.textContent = 'Gagal memuat data untuk periode ini.';
   }
+  btn.classList.remove('btn-loading'); btn.disabled = false;
+});
+
+// =========================================================
+// APPROVAL MODULE (login khusus approver_pm / approver_depthead / approver_divhead)
+// =========================================================
+let PENDING_APPROVALS = [];
+let CURRENT_APPROVAL_DETAIL = null;
+
+async function loadPendingApprovals(){
+  if(!APPS_SCRIPT_URL || !CURRENT_USER || !APPROVER_ROLES.includes(CURRENT_USER.role)) return;
+  const tbody = document.getElementById('approvalTBody');
+  tbody.innerHTML = `<tr><td colspan="6" class="text-center text-slate-400 py-6">Memuat data...</td></tr>`;
+  try{
+    const url = `${APPS_SCRIPT_URL}?action=getPendingApprovals&role=${encodeURIComponent(CURRENT_USER.role)}&username=${encodeURIComponent(CURRENT_USER.username)}`;
+    const list = await fetch(url).then(r=>r.json());
+    PENDING_APPROVALS = Array.isArray(list) ? list : [];
+    renderApprovalList();
+  }catch(e){
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-red-400 py-6">Gagal memuat data approval.</td></tr>`;
+  }
+}
+
+function renderApprovalList(){
+  const tbody = document.getElementById('approvalTBody');
+  const empty = document.getElementById('approvalEmpty');
+  if(!PENDING_APPROVALS.length){
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  tbody.innerHTML = PENDING_APPROVALS.map(sub=>{
+    return `<tr>
+      <td style="font-weight:600;">${sub.Consultant||'-'}</td>
+      <td>${sub.Project||'-'}</td>
+      <td>${sub.PeriodStart||'-'} s/d ${sub.PeriodEnd||'-'}</td>
+      <td>-</td>
+      <td><button class="btn btn-blue text-[11px] btnReviewSubmission" data-id="${sub.SubmissionID}"><i data-lucide="eye" class="w-3.5 h-3.5"></i>Review</button></td>
+    </tr>`;
+  }).join('');
+  lucide.createIcons();
+  tbody.querySelectorAll('.btnReviewSubmission').forEach(btn=>{
+    btn.addEventListener('click', ()=>openApprovalDetail(btn.dataset.id));
+  });
+}
+
+document.getElementById('btnApprovalRefresh').addEventListener('click', loadPendingApprovals);
+
+async function openApprovalDetail(submissionId){
+  const modal = document.getElementById('modalApprovalDetail');
+  document.getElementById('approvalDetailTBody').innerHTML = `<tr><td colspan="6" class="text-center text-slate-400 py-6">Memuat...</td></tr>`;
+  document.getElementById('approvalComment').value = '';
+  document.getElementById('approvalDetailError').textContent = '';
+  document.getElementById('approvalHistoryWrap').innerHTML = '';
+  modal.style.display = 'flex';
+  try{
+    const detail = await fetch(`${APPS_SCRIPT_URL}?action=getSubmissionDetail&submissionId=${encodeURIComponent(submissionId)}`).then(r=>r.json());
+    if(detail.error){ document.getElementById('approvalDetailTBody').innerHTML = `<tr><td colspan="6" class="text-center text-red-400 py-6">${detail.error}</td></tr>`; return; }
+    CURRENT_APPROVAL_DETAIL = detail;
+    document.getElementById('approvalDetailTitle').textContent = `Review Timesheet — ${detail.Consultant}`;
+    document.getElementById('approvalDetailSub').textContent = `${detail.Project||'-'} • Periode ${detail.PeriodStart} s/d ${detail.PeriodEnd}`;
+    const rows = detail.timesheetRows || [];
+    document.getElementById('approvalDetailTBody').innerHTML = rows.length ? rows.map(r=>`
+      <tr>
+        <td>${r.Date||'-'}</td>
+        <td>${r.ProjectName||'-'}</td>
+        <td>${r.Activity||'-'}</td>
+        <td>${r.Location||'-'}</td>
+        <td>${r.Hours||'-'}</td>
+        <td>${r.Mandays||'-'}</td>
+      </tr>`).join('') : `<tr><td colspan="6" class="text-center text-slate-400 py-6">Tidak ada baris timesheet.</td></tr>`;
+
+    // Histori approval sejauh ini
+    let hist = '';
+    if(detail.PM_Name) hist += `<div class="text-[11.5px] text-slate-500 flex items-center gap-2 mb-1"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500"></i>PM: <b>${detail.PM_Name}</b> — ${detail.PM_Timestamp||''} ${detail.PM_Comment?('— "'+detail.PM_Comment+'"'):''}</div>`;
+    if(detail.DeptHead_Name) hist += `<div class="text-[11.5px] text-slate-500 flex items-center gap-2 mb-1"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500"></i>Dept Head: <b>${detail.DeptHead_Name}</b> — ${detail.DeptHead_Timestamp||''} ${detail.DeptHead_Comment?('— "'+detail.DeptHead_Comment+'"'):''}</div>`;
+    if(detail.DivHead_Name) hist += `<div class="text-[11.5px] text-slate-500 flex items-center gap-2 mb-1"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500"></i>Division Head: <b>${detail.DivHead_Name}</b> — ${detail.DivHead_Timestamp||''} ${detail.DivHead_Comment?('— "'+detail.DivHead_Comment+'"'):''}</div>`;
+    document.getElementById('approvalHistoryWrap').innerHTML = hist;
+    lucide.createIcons();
+  }catch(e){
+    document.getElementById('approvalDetailTBody').innerHTML = `<tr><td colspan="6" class="text-center text-red-400 py-6">Gagal memuat detail.</td></tr>`;
+  }
+}
+
+function closeApprovalDetail(){
+  document.getElementById('modalApprovalDetail').style.display = 'none';
+  CURRENT_APPROVAL_DETAIL = null;
+}
+document.getElementById('btnCloseApprovalDetail').addEventListener('click', closeApprovalDetail);
+document.getElementById('btnCloseApprovalDetail2').addEventListener('click', closeApprovalDetail);
+
+document.getElementById('btnApproveSubmission').addEventListener('click', async ()=>{
+  if(!CURRENT_APPROVAL_DETAIL) return;
+  if(!CURRENT_USER.hasSignature){
+    document.getElementById('approvalDetailError').textContent = 'Anda belum upload tanda tangan. Upload dulu lewat tombol "Tanda Tangan Saya".';
+    return;
+  }
+  const btn = document.getElementById('btnApproveSubmission');
+  btn.classList.add('btn-loading'); btn.disabled = true;
+  document.getElementById('approvalDetailError').textContent = '';
+  try{
+    const res = await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({
+      action:'approveSubmission',
+      submissionId: CURRENT_APPROVAL_DETAIL.SubmissionID,
+      role: CURRENT_USER.role,
+      username: CURRENT_USER.username,
+      comment: document.getElementById('approvalComment').value.trim(),
+    })});
+    const data = await res.json();
+    if(data.error){ document.getElementById('approvalDetailError').textContent = data.error; }
+    else{ showToast('Timesheet berhasil di-approve.','ok'); closeApprovalDetail(); await loadPendingApprovals(); }
+  }catch(e){ document.getElementById('approvalDetailError').textContent = 'Gagal memproses approve. Cek koneksi.'; }
+  btn.classList.remove('btn-loading'); btn.disabled = false;
+});
+
+document.getElementById('btnRejectSubmission').addEventListener('click', async ()=>{
+  if(!CURRENT_APPROVAL_DETAIL) return;
+  const reason = document.getElementById('approvalComment').value.trim();
+  if(!reason){ document.getElementById('approvalDetailError').textContent = 'Komentar/alasan wajib diisi untuk Reject.'; return; }
+  if(!confirm('Reject timesheet ini? Consultant harus revisi dan submit ulang.')) return;
+  const btn = document.getElementById('btnRejectSubmission');
+  btn.classList.add('btn-loading'); btn.disabled = true;
+  document.getElementById('approvalDetailError').textContent = '';
+  try{
+    const res = await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({
+      action:'rejectSubmission',
+      submissionId: CURRENT_APPROVAL_DETAIL.SubmissionID,
+      role: CURRENT_USER.role,
+      username: CURRENT_USER.username,
+      reason,
+    })});
+    const data = await res.json();
+    if(data.error){ document.getElementById('approvalDetailError').textContent = data.error; }
+    else{ showToast('Timesheet ditolak dan dikembalikan ke consultant.','ok'); closeApprovalDetail(); await loadPendingApprovals(); }
+  }catch(e){ document.getElementById('approvalDetailError').textContent = 'Gagal memproses reject. Cek koneksi.'; }
+  btn.classList.remove('btn-loading'); btn.disabled = false;
+});
+
+// ── Upload tanda tangan (PNG, sekali per approver) ──
+let SIGNATURE_BASE64 = '';
+function openSignatureModal(){
+  document.getElementById('signatureFileInput').value = '';
+  document.getElementById('signaturePreviewWrap').style.display = 'none';
+  document.getElementById('signatureError').textContent = '';
+  SIGNATURE_BASE64 = '';
+  document.getElementById('modalSignature').style.display = 'flex';
+  lucide.createIcons();
+}
+function closeSignatureModal(){ document.getElementById('modalSignature').style.display = 'none'; }
+document.getElementById('btnOpenSignatureModal').addEventListener('click', openSignatureModal);
+document.getElementById('btnOpenSignatureModal2').addEventListener('click', openSignatureModal);
+document.getElementById('btnCloseSignatureModal').addEventListener('click', closeSignatureModal);
+document.getElementById('btnCloseSignatureModal2').addEventListener('click', closeSignatureModal);
+
+document.getElementById('signatureFileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  const errEl = document.getElementById('signatureError');
+  errEl.textContent = '';
+  if(!file) return;
+  if(file.size > 1.5*1024*1024){ errEl.textContent = 'Ukuran file maksimal 1.5MB.'; e.target.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    SIGNATURE_BASE64 = reader.result;
+    document.getElementById('signaturePreviewImg').src = SIGNATURE_BASE64;
+    document.getElementById('signaturePreviewWrap').style.display = '';
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('btnSaveSignature').addEventListener('click', async ()=>{
+  const errEl = document.getElementById('signatureError');
+  if(!SIGNATURE_BASE64){ errEl.textContent = 'Pilih file tanda tangan dulu.'; return; }
+  const btn = document.getElementById('btnSaveSignature');
+  btn.classList.add('btn-loading'); btn.disabled = true;
+  errEl.textContent = '';
+  try{
+    const res = await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({
+      action:'saveApproverSignature',
+      username: CURRENT_USER.username,
+      signatureBase64: SIGNATURE_BASE64,
+    })});
+    const data = await res.json();
+    if(data.error){ errEl.textContent = data.error; }
+    else{
+      CURRENT_USER.hasSignature = true;
+      document.getElementById('approvalSignatureBanner').style.display = 'none';
+      showToast('Tanda tangan berhasil disimpan.','ok');
+      closeSignatureModal();
+    }
+  }catch(e){ errEl.textContent = 'Gagal menyimpan. Cek koneksi.'; }
   btn.classList.remove('btn-loading'); btn.disabled = false;
 });
 </script>
