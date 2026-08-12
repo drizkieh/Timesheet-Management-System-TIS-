@@ -314,6 +314,7 @@ html,body{overflow-x:hidden;max-width:100%;}
         <div id="topbarPeriodChip" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium" style="background:#F4F6FB;border:1px solid var(--border);cursor:pointer;" title="Klik untuk ganti periode timesheet"><i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i><span id="topbarPeriodLabel">-</span><i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i></div>
         <button id="btnConnectSheet" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#FEF2E3;color:#92680B;border:1px solid #F5E6A8;"><i data-lucide="plug-zap" class="w-3.5 h-3.5"></i><span id="connStatus">Sambungkan Google Sheets</span></button>
         <button id="btnMasterDataOpen" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#F2ECFE;color:#6D28D9;border:1px solid #DDD6FE;"><i data-lucide="database" class="w-3.5 h-3.5"></i>Master Data</button>
+        <button id="btnOpenSignatureModalGlobal" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#EAF2FF;color:#1D4ED8;border:1px solid #C7DBFB;" title="Upload/lihat tanda tangan Anda — dipakai otomatis di PDF timesheet"><i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>Tanda Tangan Saya</button>
         <div class="relative"><i data-lucide="bell" class="w-5 h-5 text-slate-500"></i><span class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold">5</span></div>
         <div class="flex items-center gap-2">
           <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Devry" class="w-8 h-8 rounded-full"/>
@@ -822,14 +823,17 @@ html,body{overflow-x:hidden;max-width:100%;}
           <td style="width:22%;border:1px solid #000;text-align:center;font-weight:700;padding:6px;">Approved by,</td>
         </tr>
         <tr>
-          <td style="border-left:1px solid #000;border-right:1px solid #000;height:110px;vertical-align:bottom;text-align:center;"></td>
+          <td style="border-left:1px solid #000;border-right:1px solid #000;height:110px;vertical-align:bottom;text-align:center;"><img id="pvImgConsultant" class="pv-sign-img" style="display:none;"></td>
           <td></td>
           <td style="border-left:1px solid #000;border-right:1px solid #000;height:110px;vertical-align:bottom;text-align:center;"><img id="pvImgPM" class="pv-sign-img" style="display:none;"></td>
           <td style="border-left:1px solid #000;border-right:1px solid #000;height:110px;vertical-align:bottom;text-align:center;"><img id="pvImgDeptHead" class="pv-sign-img" style="display:none;"></td>
           <td style="border-left:1px solid #000;border-right:1px solid #000;height:110px;vertical-align:bottom;text-align:center;"><img id="pvImgDivHead" class="pv-sign-img" style="display:none;"></td>
         </tr>
         <tr>
-          <td style="border:1px solid #000;border-top:none;text-align:center;font-weight:700;padding:6px;" id="pvSignConsultant"></td>
+          <td style="border:1px solid #000;border-top:none;text-align:center;padding:6px;">
+            <div style="font-weight:700;" id="pvSignConsultant"></div>
+            <div class="pv-sign-meta" id="pvTsConsultant"></div>
+          </td>
           <td></td>
           <td style="border:1px solid #000;border-top:none;text-align:center;padding:6px;">
             <div style="font-weight:700;" id="pvSignPM"></div>
@@ -848,6 +852,14 @@ html,body{overflow-x:hidden;max-width:100%;}
           </td>
         </tr>
       </table>
+
+      <!-- Riwayat siklus approval SEBELUM revisi terakhir — cuma muncul kalau
+           periode ini pernah direvisi & di-approve ulang. Diisi via JS
+           (renderApprovalHistoryBlock) dari data ApprovalHistory. -->
+      <div id="pvApprovalHistory" style="display:none;margin-top:14px;">
+        <div style="font-weight:700;font-size:10.5px;color:#B45309;border-top:1px dashed #ccc;padding-top:8px;margin-bottom:6px;">Riwayat Approval Sebelum Revisi</div>
+        <div id="pvApprovalHistoryBody"></div>
+      </div>
     </div>
     </main>
   </div>
@@ -952,7 +964,7 @@ html,body{overflow-x:hidden;max-width:100%;}
     <div class="modal-body">
       <div class="rounded-xl p-3 mb-3 text-[11.5px]" style="background:#FEF2E3;border:1px solid #F5E6A8;color:#92680B;">
         <i data-lucide="alert-triangle" class="w-3.5 h-3.5" style="display:inline;vertical-align:-2px;"></i>
-        Periode ini sudah Approved sepenuhnya. Revisi akan langsung membuka baris timesheet-nya untuk diedit <b>tanpa approval ulang</b> dari PM / Dept Head / Div Head. Alasan revisi akan dicatat & ikut tampil di PDF.
+        Periode ini sudah Approved sepenuhnya. Revisi akan membuka baris timesheet-nya untuk diedit, lalu setelah Anda ajukan ulang, periode ini <b>harus di-approve ulang dari awal</b> (PM → Dept Head → Division Head). Riwayat approval yang lama tetap disimpan & ikut tampil di PDF. Alasan revisi akan dicatat.
       </div>
       <label class="text-[11px] font-semibold text-slate-500 block mb-1">Alasan Revisi (wajib)</label>
       <textarea id="revisiReason" rows="3" style="width:100%;resize:vertical;" placeholder="Contoh: salah input jam kerja tanggal 14, harusnya 8 jam bukan 6 jam"></textarea>
@@ -1057,6 +1069,16 @@ function initSession(user){
   document.getElementById('navDashboardItem').style.display = '';
   document.getElementById('topbarPeriodChip').style.display = '';
   document.getElementById('pageTitle').textContent = 'Dashboard';
+
+  // Tombol "Tanda Tangan Saya" di topbar berlaku buat SEMUA role (consultant
+  // juga, bukan cuma approver) — kasih warna beda kalau belum pernah upload,
+  // supaya kelihatan jelas perlu diisi dulu sebelum PDF timesheet-nya lengkap.
+  const btnSigGlobal = document.getElementById('btnOpenSignatureModalGlobal');
+  if(user.hasSignature){
+    btnSigGlobal.style.background = '#EAF2FF'; btnSigGlobal.style.color = '#1D4ED8'; btnSigGlobal.style.borderColor = '#C7DBFB';
+  } else {
+    btnSigGlobal.style.background = '#FEF2E3'; btnSigGlobal.style.color = '#92680B'; btnSigGlobal.style.borderColor = '#F5E6A8';
+  }
 
   const isApprover = APPROVER_ROLES.includes(user.role);
   document.getElementById('sidebarRole').textContent = isApprover
@@ -1412,7 +1434,13 @@ function renderApprovalFlowPanel(sub){
 
   let reached = 1, activeStep = null, bannerHTML = '', bannerStyle = '';
 
-  if(sub && sub.Status === 'Submitted'){ reached = 2; activeStep = 3; }
+  if(sub && sub.Status === 'Draft' && Number(sub.RevisionCount) > 0){
+    // Baru direvisi (approval sebelumnya di-reset) tapi belum diajukan ulang.
+    reached = 1; activeStep = 2;
+    bannerHTML = `✏️ Sedang direvisi${sub.LastRevisionReason ? (' — alasan: "'+sub.LastRevisionReason+'"') : ''}. Edit timesheet-nya lalu <b>ajukan ulang untuk approval</b> (PM → Dept Head → Division Head dari awal).`;
+    bannerStyle = 'background:#FEF2E3;color:#92680B;';
+  }
+  else if(sub && sub.Status === 'Submitted'){ reached = 2; activeStep = 3; }
   else if(sub && sub.Status === 'Approved_PM'){ reached = 3; activeStep = 4; }
   else if(sub && sub.Status === 'Approved_DeptHead'){ reached = 4; activeStep = 5; }
   else if(sub && sub.Status === 'Approved'){
@@ -2195,6 +2223,38 @@ function fillSignatureSlot(prefix, name, timestamp, signatureBase64){
   else { img.removeAttribute('src'); img.style.display = 'none'; }
 }
 
+// Render riwayat siklus approval SEBELUM revisi terakhir (kalau periode ini
+// pernah direvisi & di-approve ulang). Tiap entri histori = 1 siklus approval
+// lama, lengkap dengan nama+timestamp+gambar ttd PM/Dept Head/Div Head persis
+// seperti kondisi waktu siklus itu approve (snapshot, bukan data terkini).
+function renderApprovalHistoryBlock(history){
+  const wrap = document.getElementById('pvApprovalHistory');
+  const body = document.getElementById('pvApprovalHistoryBody');
+  if(!Array.isArray(history) || !history.length){ wrap.style.display = 'none'; body.innerHTML = ''; return; }
+
+  const stageLabel = { PM: 'Project Manager', DeptHead: 'TIS Delivery Dept Head', DivHead: 'Division Head' };
+  body.innerHTML = history.map(entry => {
+    const stagesHtml = ['PM','DeptHead','DivHead'].map(stage => {
+      const s = entry[stage] || {};
+      const imgHtml = s.signature ? `<img src="${s.signature}" style="max-height:36px;max-width:90px;display:block;margin:0 auto 2px;">` : '';
+      return `<td style="border:1px solid #ccc;text-align:center;padding:4px 6px;vertical-align:bottom;">
+        ${imgHtml}
+        <div style="font-weight:700;font-size:9px;">${s.name || '-'}</div>
+        <div style="font-size:8px;color:#5A6479;">${stageLabel[stage]}</div>
+        <div style="font-size:8px;color:#5A6479;">${s.timestamp ? formatTimestampShort(s.timestamp) : '-'}</div>
+      </td>`;
+    }).join('');
+    return `<div style="margin-bottom:8px;">
+      <div style="font-size:9.5px;margin-bottom:3px;">
+        <span style="font-weight:700;">Siklus ${entry.cycle}</span> —
+        direvisi ${entry.revisedAt ? formatTimestampShort(entry.revisedAt) : ''} oleh ${entry.revisedBy || '-'}${entry.revisionReason ? (' — alasan: "'+entry.revisionReason+'"') : ''}
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:9px;"><tr>${stagesHtml}</tr></table>
+    </div>`;
+  }).join('');
+  wrap.style.display = 'block';
+}
+
 // Isi template #pvRoot dari data apa pun (rowState personal ATAU rows hasil
 // fetch admin untuk consultant tertentu, ATAU detail submission asli).
 // year/month dipakai buat hitung tanggal Inggris per baris (baris ke-idx =
@@ -2212,20 +2272,23 @@ function renderPrintDocument({consultant, position, project, customer, monthYear
   document.getElementById('pvPosition').textContent    = position || '-';
   document.getElementById('pvProject').textContent     = project || '-';
   document.getElementById('pvMonthYear').textContent   = monthYearLabel || '-';
-  document.getElementById('pvSignConsultant').textContent = consultant || '-';
 
   const revNote = document.getElementById('pvRevisionNote');
   const revCount = approval && Number(approval.RevisionCount);
   if(revCount){
-    revNote.textContent = `⚠ Direvisi ${revCount}x setelah approval awal — terakhir: ${formatTimestampShort(approval.LastRevisedAt)}${approval.LastRevisionReason ? (' — alasan: "'+approval.LastRevisionReason+'"') : ''}`;
+    revNote.textContent = `⚠ Direvisi ${revCount}x setelah approval awal — terakhir: ${formatTimestampShort(approval.LastRevisedAt)}${approval.LastRevisionReason ? (' — alasan: "'+approval.LastRevisionReason+'"') : ''} — sudah di-approve ulang penuh dari PM.`;
     revNote.style.display = 'block';
   } else {
     revNote.style.display = 'none';
   }
 
+  // Consultant tanda tangan sendiri (upload sekali, dipakai otomatis) +
+  // timestamp submit/submit-ulang terakhir.
+  fillSignatureSlot('Consultant', consultant, approval && approval.SubmittedAt, approval && approval.Consultant_Signature);
   fillSignatureSlot('PM',       approval && approval.PM_Name,       approval && approval.PM_Timestamp,       approval && approval.PM_Signature);
   fillSignatureSlot('DeptHead', approval && approval.DeptHead_Name, approval && approval.DeptHead_Timestamp, approval && approval.DeptHead_Signature);
   fillSignatureSlot('DivHead',  approval && approval.DivHead_Name,  approval && approval.DivHead_Timestamp,  approval && approval.DivHead_Signature);
+  renderApprovalHistoryBlock(approval && approval.ApprovalHistory);
 
   // Watermark kalau periode ini belum Approved penuh (masih Draft/Submitted/
   // proses approval/Rejected) — tetap boleh diekspor untuk preview, tapi
@@ -2382,7 +2445,7 @@ document.getElementById('btnModalRevisiConfirm').addEventListener('click', async
     document.getElementById('view-entry-wrap').style.display = '';
     document.getElementById('pageTitle').textContent = 'Input Timesheet';
 
-    showToast('Periode dibuka untuk revisi. Silakan edit lalu Simpan Draft.','ok');
+    showToast('Periode dibuka untuk revisi. Edit lalu Simpan Draft, kemudian Ajukan ulang untuk approval (PM → Dept Head → Division Head dari awal).','ok');
     await loadFromSheets();
     loadMySubmissionStatus();
   }catch(e){
@@ -3180,6 +3243,7 @@ function openSignatureModal(){
 function closeSignatureModal(){ document.getElementById('modalSignature').style.display = 'none'; }
 document.getElementById('btnOpenSignatureModal').addEventListener('click', openSignatureModal);
 document.getElementById('btnOpenSignatureModal2').addEventListener('click', openSignatureModal);
+document.getElementById('btnOpenSignatureModalGlobal').addEventListener('click', openSignatureModal);
 document.getElementById('btnCloseSignatureModal').addEventListener('click', closeSignatureModal);
 document.getElementById('btnCloseSignatureModal2').addEventListener('click', closeSignatureModal);
 
@@ -3215,6 +3279,8 @@ document.getElementById('btnSaveSignature').addEventListener('click', async ()=>
     else{
       CURRENT_USER.hasSignature = true;
       document.getElementById('approvalSignatureBanner').style.display = 'none';
+      const btnSigGlobal = document.getElementById('btnOpenSignatureModalGlobal');
+      btnSigGlobal.style.background = '#EAF2FF'; btnSigGlobal.style.color = '#1D4ED8'; btnSigGlobal.style.borderColor = '#C7DBFB';
       showToast('Tanda tangan berhasil disimpan.','ok');
       closeSignatureModal();
     }
