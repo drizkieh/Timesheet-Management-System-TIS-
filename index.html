@@ -342,7 +342,7 @@ html,body{overflow-x:hidden;max-width:100%;}
             </div>
             <div class="card p-4 flex items-center gap-3">
               <div class="icon-circle" style="background:#F2ECFE;"><i data-lucide="shield-check" class="w-5 h-5" style="color:var(--purple);"></i></div>
-              <div><div class="text-[11px] text-slate-400">Status Approval</div><div class="text-base font-bold">Draft</div><div class="text-[10px] text-slate-400">Belum di submit</div></div>
+              <div><div class="text-[11px] text-slate-400">Status Approval</div><div class="text-base font-bold" id="kpiApprovalStatus">Draft</div><div class="text-[10px] text-slate-400" id="kpiApprovalSub">Belum di submit</div></div>
             </div>
           </div>
 
@@ -558,11 +558,25 @@ html,body{overflow-x:hidden;max-width:100%;}
             <button class="btn btn-gray text-[11px]" id="btnOpenSignatureModal2"><i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>Tanda Tangan Saya</button>
           </div>
         </div>
-        <div style="overflow-x:auto;">
+
+        <!-- TAB SWITCHER: Menunggu Approval / Riwayat -->
+        <div class="flex items-center gap-1 mb-4" style="border-bottom:1px solid var(--border);">
+          <button class="approvalTabBtn" data-tab="pending" style="padding:8px 14px;font-size:12.5px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:2px solid var(--blue);color:var(--blue);">Menunggu Approval</button>
+          <button class="approvalTabBtn" data-tab="history" style="padding:8px 14px;font-size:12.5px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;color:#94A3B8;">Riwayat</button>
+        </div>
+
+        <div id="approvalPendingPanel" style="overflow-x:auto;">
           <table class="ts"><thead><tr>
             <th>Consultant</th><th>Project</th><th>Periode</th><th>Jumlah Hari</th><th>Aksi</th>
           </tr></thead><tbody id="approvalTBody"></tbody></table>
           <div id="approvalEmpty" class="hidden text-center py-8 text-slate-400 text-sm">Tidak ada timesheet yang menunggu approval Anda saat ini.</div>
+        </div>
+
+        <div id="approvalHistoryPanel" style="overflow-x:auto;display:none;">
+          <table class="ts"><thead><tr>
+            <th>Consultant</th><th>Project</th><th>Periode</th><th>Status</th><th>Tanggal Aksi</th><th>Aksi</th>
+          </tr></thead><tbody id="approvalHistoryTBody"></tbody></table>
+          <div id="approvalHistoryEmpty" class="hidden text-center py-8 text-slate-400 text-sm">Belum ada riwayat approval yang Anda proses.</div>
         </div>
       </div>
     </section>
@@ -578,13 +592,14 @@ html,body{overflow-x:hidden;max-width:100%;}
           <button id="btnCloseApprovalDetail" style="background:none;border:none;cursor:pointer;"><i data-lucide="x" class="w-5 h-5 text-slate-400"></i></button>
         </div>
         <div class="modal-body">
+          <div id="approvalDetailStatusPill" style="display:none;margin-bottom:10px;"></div>
           <div style="overflow-x:auto;">
             <table class="ts"><thead><tr>
               <th>Date</th><th>Project</th><th>Activity</th><th>Location</th><th>Hours</th><th>Mandays</th>
             </tr></thead><tbody id="approvalDetailTBody"></tbody></table>
           </div>
           <div class="mt-4" id="approvalHistoryWrap"></div>
-          <div class="mt-4">
+          <div class="mt-4" id="approvalCommentWrap">
             <label class="text-[11px] font-semibold text-slate-500 block mb-1">Komentar (opsional untuk Approve, wajib untuk Reject)</label>
             <textarea id="approvalComment" rows="2" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12.5px;" placeholder="Tulis catatan review..."></textarea>
           </div>
@@ -1154,6 +1169,7 @@ async function loadFromSheets(){
     showToast('Data berhasil dimuat dari Google Sheets','ok');
     render();
     populateMasterModal();
+    loadMySubmissionStatus();
   }catch(err){
     statusEl.textContent = 'Gagal konek — cek URL';
     badge.textContent = '⚠ Gagal sinkron';
@@ -1207,6 +1223,48 @@ function renderHistoryChips(){
       rowState[activeRowIdx].activity=activityHistory[+btn.dataset.i]; render();
     });
   });
+}
+
+// Status submission consultant saat ini — dipakai buat card dashboard & badge lock baris timesheet
+let MY_LATEST_SUBMISSION = null;
+const APPROVAL_STATUS_LABEL = {
+  Submitted: 'Menunggu PM',
+  Approved_PM: 'Menunggu Dept Head',
+  Approved_DeptHead: 'Menunggu Div Head',
+  Approved: 'Disetujui',
+  Rejected: 'Ditolak',
+};
+function loadMySubmissionStatus(){
+  if(!APPS_SCRIPT_URL || !CONSULTANT_NAME) return;
+  fetch(`${APPS_SCRIPT_URL}?action=getMySubmissionStatus&consultant=${encodeURIComponent(CONSULTANT_NAME)}`)
+    .then(r=>r.json())
+    .then(d=>{
+      MY_LATEST_SUBMISSION = d && d.status ? d.status : null;
+      renderMySubmissionStatus();
+      render(); // supaya badge lock di baris timesheet ikut ke-refresh
+    })
+    .catch(()=>{});
+}
+function renderMySubmissionStatus(){
+  const elStatus = document.getElementById('kpiApprovalStatus');
+  const elSub = document.getElementById('kpiApprovalSub');
+  if(!elStatus || !elSub) return;
+  const sub = MY_LATEST_SUBMISSION;
+  if(!sub){
+    elStatus.textContent = 'Draft';
+    elStatus.style.color = '';
+    elSub.textContent = 'Belum di submit';
+    return;
+  }
+  elStatus.textContent = APPROVAL_STATUS_LABEL[sub.Status] || sub.Status || '-';
+  elStatus.style.color = sub.Status==='Approved' ? 'var(--green)' : sub.Status==='Rejected' ? 'var(--red)' : 'var(--amber)';
+  if(sub.Status === 'Rejected'){
+    elSub.textContent = sub.RejectReason ? `Ditolak — "${sub.RejectReason}"` : 'Ditolak, silakan revisi & submit ulang';
+  } else if(sub.Status === 'Approved'){
+    elSub.textContent = `Periode ${sub.PeriodStart} s/d ${sub.PeriodEnd}`;
+  } else {
+    elSub.textContent = `Periode ${sub.PeriodStart} s/d ${sub.PeriodEnd}`;
+  }
 }
 
 document.getElementById('menuTimesheet').addEventListener('click',()=>{
@@ -1393,6 +1451,23 @@ function showHrsSuggest(inputEl, idx){
   positionSuggest(box, inputEl);
 }
 
+// Status per baris timesheet (kolom Status di sheet Timesheet, di-set via
+// updateTimesheetStatus di backend) -> info badge terkunci di tabel consultant
+function getRowLockInfo(status){
+  switch(status){
+    case 'Submitted':
+      return { locked:true, label:'Menunggu PM', icon:'clock', color:'#92680B', bg:'#FFFBEB', badgeBg:'#FEF2E3' };
+    case 'Approved_PM':
+      return { locked:true, label:'Menunggu Dept Head', icon:'clock', color:'#92680B', bg:'#FFFBEB', badgeBg:'#FEF2E3' };
+    case 'Approved_DeptHead':
+      return { locked:true, label:'Menunggu Div Head', icon:'clock', color:'#92680B', bg:'#FFFBEB', badgeBg:'#FEF2E3' };
+    case 'Approved':
+      return { locked:true, label:'Approved', icon:'lock', color:'#6D28D9', bg:'#F5F3FF', badgeBg:'#F2ECFE' };
+    default:
+      return { locked:false };
+  }
+}
+
 // =========================================================
 // RENDER
 // =========================================================
@@ -1426,38 +1501,45 @@ function render(){
         <td data-label="Aktivitas">Hari Libur</td><td data-label="Lokasi">-</td><td data-label="Jam">-</td><td data-label="Mandays">-</td>
         <td style="white-space:nowrap;">${toggleBtn}</td>`;
     } else {
-      // Semua baris non-holiday selalu editable
-      // filled hanya untuk warna latar belakang (hijau muda kalau sudah dari Sheets)
+      // Semua baris non-holiday editable — KECUALI kalau sudah masuk approval
+      // (status selain Draft), maka dikunci supaya tidak berubah saat direview.
       const p = r.pid ? (PROJECTS[r.pid]||{name:'-',customer:'-',phase:'-'}) : {name:'-',customer:'-',phase:'-'};
-      const rowBg = r.filled ? 'background:#F0FDF4;' : '';
+      const lock = getRowLockInfo(r.status);
+      const rowBg = lock.locked ? `background:${lock.bg};` : (r.filled ? 'background:#F0FDF4;' : '');
       const syncDot = r.sheetRowId
         ? `<span title="Tersimpan di Sheets" style="width:6px;height:6px;border-radius:999px;background:#22C55E;display:inline-block;margin-left:4px;"></span>`
         : `<span title="Belum disimpan" style="width:6px;height:6px;border-radius:999px;background:#D1D5DB;display:inline-block;margin-left:4px;"></span>`;
+      const lockBadge = lock.locked
+        ? `<span title="${lock.label}" style="font-size:9px;padding:2px 6px;border-radius:6px;background:${lock.badgeBg};color:${lock.color};display:inline-flex;align-items:center;gap:3px;white-space:nowrap;font-weight:600;"><i data-lucide="${lock.icon}" class="w-2.5 h-2.5"></i>${lock.label}</span>`
+        : '';
+      const dis = lock.locked ? 'disabled' : '';
       tr.innerHTML=`
-        <td style="${rowBg}"><input type="checkbox" class="rowChk"></td>
+        <td style="${rowBg}"><input type="checkbox" class="rowChk" ${dis}></td>
         <td style="${rowBg}">${idx+1}${syncDot}</td>
-        <td style="${rowBg}">${r.date}<br><span class="text-[10px text-slate-400">${r.day}</span></td>
+        <td style="${rowBg}">${r.date}<br><span class="text-[10px text-slate-400">${r.day}</span>${lockBadge?`<br>${lockBadge}`:''}</td>
         <td style="${rowBg}">
           <div class="relative">
-            <input class="pid-input" data-idx="${idx}" value="${r.pid||''}" placeholder="Ketik Project ID..." autocomplete="off" style="font-size:11px;padding-right:22px;">
-            <button class="open-master-btn absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500" data-idx="${idx}" title="Buka Master Data"><i data-lucide="search" class="w-3 h-3"></i></button>
+            <input class="pid-input" data-idx="${idx}" value="${r.pid||''}" placeholder="Ketik Project ID..." autocomplete="off" style="font-size:11px;padding-right:22px;" ${dis}>
+            <button class="open-master-btn absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500" data-idx="${idx}" title="Buka Master Data" ${dis}><i data-lucide="search" class="w-3 h-3"></i></button>
           </div>
         </td>
         <td data-label="Project Name" style="font-size:11.5px;${rowBg}">${p.name&&p.name!=='-'?p.name:'<span class="text-slate-300">-</span>'}</td>
         <td data-label="Phase" style="font-size:11.5px;${rowBg}">${p.phase&&p.phase!=='-'?p.phase:'<span class="text-slate-300">-</span>'}</td>
         <td data-label="Customer" style="font-size:11.5px;${rowBg}">${p.customer&&p.customer!=='-'?p.customer:'<span class="text-slate-300">-</span>'}</td>
         <td data-label="Aktivitas" style="${rowBg}">
-          <input class="act-input" data-idx="${idx}" value="${r.activity||''}" placeholder="Ketik atau pilih aktivitas..." autocomplete="off">
+          <input class="act-input" data-idx="${idx}" value="${r.activity||''}" placeholder="Ketik atau pilih aktivitas..." autocomplete="off" ${dis}>
           ${r.aiSuggest?`<div style="margin-top:4px;background:#FEF9E7;border:1px solid #F5E6A8;border-radius:6px;padding:5px 8px;font-size:10.5px;color:#8A6A16;display:flex;align-items:center;justify-content:space-between;gap:6px;"><span>Gunakan aktivitas kemarin?</span><button class="aiYesBtn" data-idx="${idx}" style="background:#F59E0B;color:#fff;border-radius:5px;padding:2px 8px;font-weight:700;">Ya</button></div>`:''}
         </td>
-        <td data-label="Lokasi" style="${rowBg}"><input class="loc-input" data-idx="${idx}" value="${r.location||''}" placeholder="Pilih lokasi..." autocomplete="off"></td>
-        <td data-label="Jam" style="${rowBg}"><input class="hrs-input" data-idx="${idx}" value="${r.hours||''}" placeholder="08:30 - 17:30" autocomplete="off"></td>
+        <td data-label="Lokasi" style="${rowBg}"><input class="loc-input" data-idx="${idx}" value="${r.location||''}" placeholder="Pilih lokasi..." autocomplete="off" ${dis}></td>
+        <td data-label="Jam" style="${rowBg}"><input class="hrs-input" data-idx="${idx}" value="${r.hours||''}" placeholder="08:30 - 17:30" autocomplete="off" ${dis}></td>
         <td data-label="Mandays" style="${rowBg}">${r.mandays||''}</td>
         <td style="${rowBg};white-space:nowrap;">
           <div class="flex gap-1 items-center flex-wrap">
+            ${lock.locked ? `<span style="font-size:9.5px;color:${lock.color};display:inline-flex;align-items:center;gap:3px;"><i data-lucide="lock" class="w-3 h-3"></i>Terkunci</span>` : `
             ${toggleBtn}
             <i data-lucide="copy" class="w-3.5 h-3.5 cursor-pointer text-blue-500 copyRow" data-idx="${idx}" title="Copy ke baris berikutnya"></i>
             <i data-lucide="trash-2" class="w-3.5 h-3.5 cursor-pointer text-red-500 delRow" data-idx="${idx}" title="Hapus & sync ke Sheets"></i>
+            `}
           </div>
         </td>`;
     }
@@ -2423,19 +2505,47 @@ document.getElementById('btnModalPeriodeApply').addEventListener('click', async 
 // APPROVAL MODULE (login khusus approver_pm / approver_depthead / approver_divhead)
 // =========================================================
 let PENDING_APPROVALS = [];
+let APPROVAL_HISTORY = [];
 let CURRENT_APPROVAL_DETAIL = null;
+let APPROVAL_ACTIVE_TAB = 'pending';
+
+const SUBMISSION_STATUS_BADGE = {
+  Submitted:          { label:'Menunggu PM',         color:'#92680B', bg:'#FEF2E3' },
+  Approved_PM:         { label:'Menunggu Dept Head',  color:'#92680B', bg:'#FEF2E3' },
+  Approved_DeptHead:   { label:'Menunggu Div Head',   color:'#92680B', bg:'#FEF2E3' },
+  Approved:            { label:'Approved',            color:'#6D28D9', bg:'#F2ECFE' },
+  Rejected:            { label:'Rejected',            color:'#DC2626', bg:'#FEE2E2' },
+};
+function statusPillHTML(status){
+  const s = SUBMISSION_STATUS_BADGE[status] || { label: status||'-', color:'#64748B', bg:'#F1F5F9' };
+  return `<span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;background:${s.bg};color:${s.color};">${s.label}</span>`;
+}
 
 async function loadPendingApprovals(){
   if(!APPS_SCRIPT_URL || !CURRENT_USER || !APPROVER_ROLES.includes(CURRENT_USER.role)) return;
   const tbody = document.getElementById('approvalTBody');
   tbody.innerHTML = `<tr><td colspan="6" class="text-center text-slate-400 py-6">Memuat data...</td></tr>`;
   try{
-    const url = `${APPS_SCRIPT_URL}?action=getPendingApprovals&role=${encodeURIComponent(CURRENT_USER.role)}&username=${encodeURIComponent(CURRENT_USER.username)}`;
+    const url = `${APPS_SCRIPT_URL}?action=getPendingApprovals&role=${encodeURIComponent(CURRENT_USER.role)}&username=${encodeURIComponent(CURRENT_USER.username)}&mode=pending`;
     const list = await fetch(url).then(r=>r.json());
     PENDING_APPROVALS = Array.isArray(list) ? list : [];
     renderApprovalList();
   }catch(e){
     tbody.innerHTML = `<tr><td colspan="6" class="text-center text-red-400 py-6">Gagal memuat data approval.</td></tr>`;
+  }
+}
+
+async function loadApprovalHistory(){
+  if(!APPS_SCRIPT_URL || !CURRENT_USER || !APPROVER_ROLES.includes(CURRENT_USER.role)) return;
+  const tbody = document.getElementById('approvalHistoryTBody');
+  tbody.innerHTML = `<tr><td colspan="6" class="text-center text-slate-400 py-6">Memuat data...</td></tr>`;
+  try{
+    const url = `${APPS_SCRIPT_URL}?action=getPendingApprovals&role=${encodeURIComponent(CURRENT_USER.role)}&username=${encodeURIComponent(CURRENT_USER.username)}&mode=history`;
+    const list = await fetch(url).then(r=>r.json());
+    APPROVAL_HISTORY = Array.isArray(list) ? list : [];
+    renderApprovalHistory();
+  }catch(e){
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-red-400 py-6">Gagal memuat riwayat.</td></tr>`;
   }
 }
 
@@ -2459,25 +2569,96 @@ function renderApprovalList(){
   }).join('');
   lucide.createIcons();
   tbody.querySelectorAll('.btnReviewSubmission').forEach(btn=>{
-    btn.addEventListener('click', ()=>openApprovalDetail(btn.dataset.id));
+    btn.addEventListener('click', ()=>openApprovalDetail(btn.dataset.id, false));
   });
 }
 
-document.getElementById('btnApprovalRefresh').addEventListener('click', loadPendingApprovals);
+function renderApprovalHistory(){
+  const tbody = document.getElementById('approvalHistoryTBody');
+  const empty = document.getElementById('approvalHistoryEmpty');
+  if(!APPROVAL_HISTORY.length){
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  const stageTsField = CURRENT_USER.role==='approver_pm' ? 'PM_Timestamp'
+                      : CURRENT_USER.role==='approver_depthead' ? 'DeptHead_Timestamp' : 'DivHead_Timestamp';
+  tbody.innerHTML = APPROVAL_HISTORY.map(sub=>{
+    const actionAt = sub.Status==='Rejected' ? (sub.RejectedAt||'-') : (sub[stageTsField]||'-');
+    return `<tr>
+      <td style="font-weight:600;">${sub.Consultant||'-'}</td>
+      <td>${sub.Project||'-'}</td>
+      <td>${sub.PeriodStart||'-'} s/d ${sub.PeriodEnd||'-'}</td>
+      <td>${statusPillHTML(sub.Status)}</td>
+      <td style="font-size:11px;color:#64748B;">${formatTimestampShort(actionAt)}</td>
+      <td><button class="btn btn-outline text-[11px] btnViewSubmissionHistory" data-id="${sub.SubmissionID}"><i data-lucide="eye" class="w-3.5 h-3.5"></i>Lihat</button></td>
+    </tr>`;
+  }).join('');
+  lucide.createIcons();
+  tbody.querySelectorAll('.btnViewSubmissionHistory').forEach(btn=>{
+    btn.addEventListener('click', ()=>openApprovalDetail(btn.dataset.id, true));
+  });
+}
 
-async function openApprovalDetail(submissionId){
+function formatTimestampShort(val){
+  if(!val || val==='-') return '-';
+  const d = new Date(val);
+  if(isNaN(d.getTime())) return String(val);
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  return `${dd} ${mo} ${d.getFullYear()}, ${hh}:${mm}`;
+}
+
+document.getElementById('btnApprovalRefresh').addEventListener('click', ()=>{
+  if(APPROVAL_ACTIVE_TAB==='history') loadApprovalHistory(); else loadPendingApprovals();
+});
+
+// Tab switcher Menunggu Approval / Riwayat
+document.querySelectorAll('.approvalTabBtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    APPROVAL_ACTIVE_TAB = btn.dataset.tab;
+    document.querySelectorAll('.approvalTabBtn').forEach(b=>{
+      const active = b===btn;
+      b.style.color = active ? 'var(--blue)' : '#94A3B8';
+      b.style.borderBottomColor = active ? 'var(--blue)' : 'transparent';
+    });
+    const isHistory = APPROVAL_ACTIVE_TAB==='history';
+    document.getElementById('approvalPendingPanel').style.display = isHistory ? 'none' : '';
+    document.getElementById('approvalHistoryPanel').style.display = isHistory ? '' : 'none';
+    document.getElementById('approvalStageTitle').textContent = isHistory ? 'Riwayat Approval' : 'Menunggu Approval';
+    document.getElementById('approvalStageDesc').textContent = isHistory
+      ? 'Timesheet yang sudah pernah Anda approve atau reject'
+      : 'Daftar timesheet yang menunggu review Anda';
+    if(isHistory && !APPROVAL_HISTORY.length) loadApprovalHistory();
+  });
+});
+
+async function openApprovalDetail(submissionId, readonly){
   const modal = document.getElementById('modalApprovalDetail');
   document.getElementById('approvalDetailTBody').innerHTML = `<tr><td colspan="6" class="text-center text-slate-400 py-6">Memuat...</td></tr>`;
   document.getElementById('approvalComment').value = '';
   document.getElementById('approvalDetailError').textContent = '';
   document.getElementById('approvalHistoryWrap').innerHTML = '';
+  const statusPill = document.getElementById('approvalDetailStatusPill');
+  statusPill.style.display = 'none';
+  // Mode read-only (dibuka dari tab Riwayat): sembunyikan komentar & tombol Approve/Reject
+  document.getElementById('approvalCommentWrap').style.display = readonly ? 'none' : '';
+  document.getElementById('btnApproveSubmission').style.display = readonly ? 'none' : '';
+  document.getElementById('btnRejectSubmission').style.display = readonly ? 'none' : '';
   modal.style.display = 'flex';
   try{
     const detail = await fetch(`${APPS_SCRIPT_URL}?action=getSubmissionDetail&submissionId=${encodeURIComponent(submissionId)}`).then(r=>r.json());
     if(detail.error){ document.getElementById('approvalDetailTBody').innerHTML = `<tr><td colspan="6" class="text-center text-red-400 py-6">${detail.error}</td></tr>`; return; }
     CURRENT_APPROVAL_DETAIL = detail;
-    document.getElementById('approvalDetailTitle').textContent = `Review Timesheet — ${detail.Consultant}`;
+    document.getElementById('approvalDetailTitle').textContent = `${readonly?'Detail':'Review'} Timesheet — ${detail.Consultant}`;
     document.getElementById('approvalDetailSub').textContent = `${detail.Project||'-'} • Periode ${detail.PeriodStart} s/d ${detail.PeriodEnd}`;
+    if(readonly){
+      statusPill.style.display = '';
+      statusPill.innerHTML = statusPillHTML(detail.Status) + (detail.Status==='Rejected' && detail.RejectReason ? ` <span class="text-[11px] text-slate-400">— alasan: "${detail.RejectReason}"</span>` : '');
+    }
     const rows = detail.timesheetRows || [];
     document.getElementById('approvalDetailTBody').innerHTML = rows.length ? rows.map(r=>`
       <tr>
@@ -2491,9 +2672,10 @@ async function openApprovalDetail(submissionId){
 
     // Histori approval sejauh ini
     let hist = '';
-    if(detail.PM_Name) hist += `<div class="text-[11.5px] text-slate-500 flex items-center gap-2 mb-1"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500"></i>PM: <b>${detail.PM_Name}</b> — ${detail.PM_Timestamp||''} ${detail.PM_Comment?('— "'+detail.PM_Comment+'"'):''}</div>`;
-    if(detail.DeptHead_Name) hist += `<div class="text-[11.5px] text-slate-500 flex items-center gap-2 mb-1"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500"></i>Dept Head: <b>${detail.DeptHead_Name}</b> — ${detail.DeptHead_Timestamp||''} ${detail.DeptHead_Comment?('— "'+detail.DeptHead_Comment+'"'):''}</div>`;
-    if(detail.DivHead_Name) hist += `<div class="text-[11.5px] text-slate-500 flex items-center gap-2 mb-1"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500"></i>Division Head: <b>${detail.DivHead_Name}</b> — ${detail.DivHead_Timestamp||''} ${detail.DivHead_Comment?('— "'+detail.DivHead_Comment+'"'):''}</div>`;
+    if(detail.PM_Name) hist += `<div class="text-[11.5px] text-slate-500 flex items-center gap-2 mb-1"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500"></i>PM: <b>${detail.PM_Name}</b> — ${formatTimestampShort(detail.PM_Timestamp)} ${detail.PM_Comment?('— "'+detail.PM_Comment+'"'):''}</div>`;
+    if(detail.DeptHead_Name) hist += `<div class="text-[11.5px] text-slate-500 flex items-center gap-2 mb-1"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500"></i>Dept Head: <b>${detail.DeptHead_Name}</b> — ${formatTimestampShort(detail.DeptHead_Timestamp)} ${detail.DeptHead_Comment?('— "'+detail.DeptHead_Comment+'"'):''}</div>`;
+    if(detail.DivHead_Name) hist += `<div class="text-[11.5px] text-slate-500 flex items-center gap-2 mb-1"><i data-lucide="check" class="w-3.5 h-3.5 text-green-500"></i>Division Head: <b>${detail.DivHead_Name}</b> — ${formatTimestampShort(detail.DivHead_Timestamp)} ${detail.DivHead_Comment?('— "'+detail.DivHead_Comment+'"'):''}</div>`;
+    if(detail.Status==='Rejected' && detail.RejectedBy) hist += `<div class="text-[11.5px] text-slate-500 flex items-center gap-2 mb-1"><i data-lucide="x" class="w-3.5 h-3.5 text-red-500"></i>Ditolak oleh: <b>${detail.RejectedBy}</b> — ${formatTimestampShort(detail.RejectedAt)} ${detail.RejectReason?('— "'+detail.RejectReason+'"'):''}</div>`;
     document.getElementById('approvalHistoryWrap').innerHTML = hist;
     lucide.createIcons();
   }catch(e){
@@ -2527,7 +2709,7 @@ document.getElementById('btnApproveSubmission').addEventListener('click', async 
     })});
     const data = await res.json();
     if(data.error){ document.getElementById('approvalDetailError').textContent = data.error; }
-    else{ showToast('Timesheet berhasil di-approve.','ok'); closeApprovalDetail(); await loadPendingApprovals(); }
+    else{ showToast('Timesheet berhasil di-approve.','ok'); closeApprovalDetail(); APPROVAL_HISTORY=[]; await loadPendingApprovals(); }
   }catch(e){ document.getElementById('approvalDetailError').textContent = 'Gagal memproses approve. Cek koneksi.'; }
   btn.classList.remove('btn-loading'); btn.disabled = false;
 });
@@ -2550,7 +2732,7 @@ document.getElementById('btnRejectSubmission').addEventListener('click', async (
     })});
     const data = await res.json();
     if(data.error){ document.getElementById('approvalDetailError').textContent = data.error; }
-    else{ showToast('Timesheet ditolak dan dikembalikan ke consultant.','ok'); closeApprovalDetail(); await loadPendingApprovals(); }
+    else{ showToast('Timesheet ditolak dan dikembalikan ke consultant.','ok'); closeApprovalDetail(); APPROVAL_HISTORY=[]; await loadPendingApprovals(); }
   }catch(e){ document.getElementById('approvalDetailError').textContent = 'Gagal memproses reject. Cek koneksi.'; }
   btn.classList.remove('btn-loading'); btn.disabled = false;
 });
