@@ -161,8 +161,8 @@ html,body{overflow-x:hidden;max-width:100%;}
 }
 #pvRoot{display:none;position:relative;}
 #pvWatermark{display:none;position:absolute;top:38%;left:50%;transform:translate(-50%,-50%) rotate(-28deg);font-size:54px;font-weight:800;letter-spacing:.05em;color:rgba(220,38,38,.16);border:6px solid rgba(220,38,38,.16);border-radius:14px;padding:6px 34px;white-space:nowrap;pointer-events:none;z-index:5;}
-.pv-sign-img{max-height:44px;max-width:120px;object-fit:contain;display:block;margin:0 auto 2px;}
-.pv-sign-meta{font-size:8px;color:#5A6479;font-weight:400;margin-top:1px;}
+.pv-sign-img{max-height:100px;max-width:220px;object-fit:contain;display:block;margin:0 auto 3px;}
+.pv-sign-meta{font-size:10px;color:#5A6479;font-weight:500;margin-top:2px;}
 
 @media (max-width:1023px){
   aside{
@@ -293,10 +293,7 @@ html,body{overflow-x:hidden;max-width:100%;}
       </nav>
     </div>
     <div class="card p-3" style="background:#1B2547;border-color:#28325A;">
-      <div class="text-[12px] font-semibold text-white mb-1">Butuh Bantuan?</div>
-      <div class="text-[11px] text-slate-400 mb-2">Hubungi Tim Support kami</div>
-      <button class="btn btn-blue w-full justify-center text-[11px]"><i data-lucide="headset" class="w-3.5 h-3.5"></i>Hubungi Support</button>
-      <div class="text-[10px] text-slate-500 mt-3">© 2026 Integra Solusi Mandiri<br>v1.1.0</div>
+      <div class="text-[10px] text-slate-500">© 2026 Integra Solusi Mandiri<br>v1.1.0</div>
     </div>
   </aside>
 
@@ -707,7 +704,7 @@ html,body{overflow-x:hidden;max-width:100%;}
             <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Start Kontrak</label><input id="uStartKontrak" type="date"></div>
             <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">End Kontrak</label><input id="uEndKontrak" type="date"></div>
             <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Role</label>
-              <select id="uRole"><option value="user">User (Consultant)</option><option value="admin">Admin</option><option value="approver_pm">Approver - Project Manager</option><option value="approver_depthead">Approver - Dept Head</option><option value="approver_divhead">Approver - Division Head</option></select>
+              <select id="uRole"><option value="user">User (Freelance)</option><option value="admin">Admin</option><option value="approver_pm">Approver - Project Manager</option><option value="approver_depthead">Approver - Dept Head</option><option value="approver_divhead">Approver - Division Head</option></select>
             </div>
             <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Status</label>
               <select id="uStatus"><option value="Aktif">Aktif</option><option value="Non-aktif">Non-aktif</option></select>
@@ -821,11 +818,11 @@ html,body{overflow-x:hidden;max-width:100%;}
           <td style="width:22%;border:1px solid #000;text-align:center;font-weight:700;padding:6px;">Approved by,</td>
         </tr>
         <tr>
-          <td style="border-left:1px solid #000;border-right:1px solid #000;height:60px;vertical-align:bottom;text-align:center;"></td>
+          <td style="border-left:1px solid #000;border-right:1px solid #000;height:110px;vertical-align:bottom;text-align:center;"></td>
           <td></td>
-          <td style="border-left:1px solid #000;border-right:1px solid #000;vertical-align:bottom;text-align:center;"><img id="pvImgPM" class="pv-sign-img" style="display:none;"></td>
-          <td style="border-left:1px solid #000;border-right:1px solid #000;vertical-align:bottom;text-align:center;"><img id="pvImgDeptHead" class="pv-sign-img" style="display:none;"></td>
-          <td style="border-left:1px solid #000;border-right:1px solid #000;vertical-align:bottom;text-align:center;"><img id="pvImgDivHead" class="pv-sign-img" style="display:none;"></td>
+          <td style="border-left:1px solid #000;border-right:1px solid #000;height:110px;vertical-align:bottom;text-align:center;"><img id="pvImgPM" class="pv-sign-img" style="display:none;"></td>
+          <td style="border-left:1px solid #000;border-right:1px solid #000;height:110px;vertical-align:bottom;text-align:center;"><img id="pvImgDeptHead" class="pv-sign-img" style="display:none;"></td>
+          <td style="border-left:1px solid #000;border-right:1px solid #000;height:110px;vertical-align:bottom;text-align:center;"><img id="pvImgDivHead" class="pv-sign-img" style="display:none;"></td>
         </tr>
         <tr>
           <td style="border:1px solid #000;border-top:none;text-align:center;font-weight:700;padding:6px;" id="pvSignConsultant"></td>
@@ -1007,10 +1004,24 @@ function initSession(user){
   document.getElementById('sidebarName').textContent  = user.fullname;
   document.getElementById('userAvatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.fullname)}`;
 
+  // FIX (bug "bocor" Admin Panel ke akun lain): reset SEMUA view & menu utama
+  // ke kondisi default di awal SETIAP login — supaya sisa tampilan dari sesi
+  // sebelumnya (mis. admin logout lalu user lain login) gak numpuk/"bocor"
+  // ke akun yang baru login. Sebelumnya adminView cuma pernah di-nyalain,
+  // gak pernah di-matiin lagi waktu logout atau waktu role lain login.
+  document.getElementById('view-entry-wrap').style.display = '';
+  document.getElementById('adminView').style.display = 'none';
+  document.getElementById('approvalView').style.display = 'none';
+  document.getElementById('navAdminMenu').style.display = 'none';
+  document.getElementById('navApprovalMenu').style.display = 'none';
+  document.getElementById('navTimesheetGroup').style.display = '';
+  document.getElementById('navDashboardItem').style.display = '';
+  document.getElementById('pageTitle').textContent = 'Dashboard';
+
   const isApprover = APPROVER_ROLES.includes(user.role);
   document.getElementById('sidebarRole').textContent = isApprover
     ? (APPROVER_LABELS[user.role] || 'Approver')
-    : (user.role === 'admin' ? 'Administrator' : 'Consultant');
+    : (user.role === 'admin' ? 'Administrator' : 'Freelance');
 
   if(isApprover){
     // Login approver hanya bisa lihat menu Approval (read-only review) — menu lain disembunyikan total
@@ -1093,6 +1104,8 @@ function logout(){
   document.getElementById('navAdminMenu').style.display = 'none';
   document.getElementById('navApprovalMenu').style.display = 'none';
   document.getElementById('approvalView').style.display = 'none';
+  document.getElementById('adminView').style.display = 'none';
+  document.getElementById('view-entry-wrap').style.display = '';
   document.getElementById('navTimesheetGroup').style.display = '';
   document.getElementById('navDashboardItem').style.display = '';
   ['infoConsultantName','infoCustomer','infoPosition','infoProject','infoMonthYear'].forEach(id=>{
