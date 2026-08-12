@@ -159,7 +159,10 @@ html,body{overflow-x:hidden;max-width:100%;}
   body.printing-pv main > *:not(#pvRoot){display:none!important;}
   body.printing-pv #pvRoot{display:block!important;padding:20px;background:#fff;}
 }
-#pvRoot{display:none;}
+#pvRoot{display:none;position:relative;}
+#pvWatermark{display:none;position:absolute;top:38%;left:50%;transform:translate(-50%,-50%) rotate(-28deg);font-size:54px;font-weight:800;letter-spacing:.05em;color:rgba(220,38,38,.16);border:6px solid rgba(220,38,38,.16);border-radius:14px;padding:6px 34px;white-space:nowrap;pointer-events:none;z-index:5;}
+.pv-sign-img{max-height:44px;max-width:120px;object-fit:contain;display:block;margin:0 auto 2px;}
+.pv-sign-meta{font-size:8px;color:#5A6479;font-weight:400;margin-top:1px;}
 
 @media (max-width:1023px){
   aside{
@@ -439,6 +442,17 @@ html,body{overflow-x:hidden;max-width:100%;}
             </div>
           </div>
 
+          <div class="card p-4">
+            <div class="flex items-center justify-between mb-2">
+              <div class="text-sm font-bold">Riwayat Periode Saya</div>
+              <i data-lucide="calendar-clock" class="w-4 h-4 text-slate-400"></i>
+            </div>
+            <div class="text-[10.5px] text-slate-400 mb-2">Cari periode yang sudah pernah disubmit / di-approve, lalu export PDF-nya</div>
+            <div class="space-y-1.5" id="myPeriodHistoryList" style="max-height:220px;overflow-y:auto;">
+              <div class="text-[11px] text-slate-400 text-center py-2">Belum ada riwayat submit.</div>
+            </div>
+          </div>
+
           <div class="rounded-2xl p-4" style="background:#FEF9E7;border:1px solid #F5E6A8;">
             <div class="flex items-center gap-2 text-sm font-bold mb-2" style="color:#92680B;"><i data-lucide="lightbulb" class="w-4 h-4"></i>Tips Cepat</div>
             <ul class="text-[11.5px] space-y-1.5" style="color:#8A6A16;">
@@ -478,7 +492,36 @@ html,body{overflow-x:hidden;max-width:100%;}
       <!-- Tab navigation -->
       <div class="flex gap-2 mb-4 no-print">
         <button class="admin-tab-btn btn btn-blue text-[11px]" data-atab="timesheet">📋 Semua Timesheet</button>
+        <button class="admin-tab-btn btn btn-outline text-[11px]" data-atab="approvals">🖨️ Print per Approval</button>
         <button class="admin-tab-btn btn btn-outline text-[11px]" data-atab="users">👥 Kelola User</button>
+      </div>
+
+      <!-- TAB: PRINT PER APPROVAL (cari periode yg sudah/belum di-approve, lalu print) -->
+      <div id="adminTabApprovals" class="card p-5" style="display:none;">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-3 no-print">
+          <div>
+            <div class="text-base font-bold">Print per Approval</div>
+            <div class="text-xs text-slate-400 mt-0.5">Cari periode timesheet per consultant, klik untuk lihat detail hariannya lalu export PDF (ttd & timestamp approval ikut tercetak kalau sudah ada)</div>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <select id="adminApprovalFilterUser" style="width:200px;font-size:12px;"><option value="">Semua Consultant</option></select>
+            <select id="adminApprovalFilterStatus" style="width:170px;font-size:12px;">
+              <option value="">Semua Status</option>
+              <option value="Submitted">Menunggu PM</option>
+              <option value="Approved_PM">Menunggu Dept Head</option>
+              <option value="Approved_DeptHead">Menunggu Div Head</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+            <button class="btn btn-outline text-[11px]" id="btnAdminApprovalRefresh"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Refresh</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="ts"><thead><tr>
+            <th>Consultant</th><th>Project</th><th>Periode</th><th>Status</th><th>Terakhir Diupdate</th><th>Aksi</th>
+          </tr></thead><tbody id="adminApprovalTBody"></tbody></table>
+          <div id="adminApprovalEmpty" class="hidden text-center py-8 text-slate-400 text-sm">Tidak ada periode yang cocok dengan filter.</div>
+        </div>
       </div>
 
       <!-- TAB: TIMESHEET -->
@@ -607,6 +650,7 @@ html,body{overflow-x:hidden;max-width:100%;}
         </div>
         <div class="modal-footer">
           <button class="btn btn-outline" id="btnCloseApprovalDetail2">Tutup</button>
+          <button class="btn btn-outline" id="btnPrintApprovalDetail" style="color:#DC2626;"><i data-lucide="file-text" class="w-3.5 h-3.5"></i>Export PDF</button>
           <button class="btn text-white" style="background:var(--red);" id="btnRejectSubmission"><i data-lucide="x-circle" class="w-3.5 h-3.5"></i>Reject</button>
           <button class="btn btn-green" id="btnApproveSubmission"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i>Approve</button>
         </div>
@@ -681,6 +725,7 @@ html,body{overflow-x:hidden;max-width:100%;}
 
     <!-- ============ PRINT TEMPLATE: TIMESHEET (persis template resmi) ============ -->
     <div id="pvRoot">
+      <div id="pvWatermark">BELUM FINAL</div>
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
         <div>
           <div style="border:2.5px solid #000;display:inline-block;padding:8px 30px;font-weight:800;font-size:20px;letter-spacing:.02em;">TIMESHEET</div>
@@ -776,11 +821,11 @@ html,body{overflow-x:hidden;max-width:100%;}
           <td style="width:22%;border:1px solid #000;text-align:center;font-weight:700;padding:6px;">Approved by,</td>
         </tr>
         <tr>
-          <td style="border-left:1px solid #000;border-right:1px solid #000;height:60px;"></td>
+          <td style="border-left:1px solid #000;border-right:1px solid #000;height:60px;vertical-align:bottom;text-align:center;"></td>
           <td></td>
-          <td style="border-left:1px solid #000;border-right:1px solid #000;"></td>
-          <td style="border-left:1px solid #000;border-right:1px solid #000;"></td>
-          <td style="border-left:1px solid #000;border-right:1px solid #000;"></td>
+          <td style="border-left:1px solid #000;border-right:1px solid #000;vertical-align:bottom;text-align:center;"><img id="pvImgPM" class="pv-sign-img" style="display:none;"></td>
+          <td style="border-left:1px solid #000;border-right:1px solid #000;vertical-align:bottom;text-align:center;"><img id="pvImgDeptHead" class="pv-sign-img" style="display:none;"></td>
+          <td style="border-left:1px solid #000;border-right:1px solid #000;vertical-align:bottom;text-align:center;"><img id="pvImgDivHead" class="pv-sign-img" style="display:none;"></td>
         </tr>
         <tr>
           <td style="border:1px solid #000;border-top:none;text-align:center;font-weight:700;padding:6px;" id="pvSignConsultant"></td>
@@ -788,14 +833,17 @@ html,body{overflow-x:hidden;max-width:100%;}
           <td style="border:1px solid #000;border-top:none;text-align:center;padding:6px;">
             <div style="font-weight:700;" id="pvSignPM"></div>
             <div style="font-size:9.5px;">Project Manager</div>
+            <div class="pv-sign-meta" id="pvTsPM"></div>
           </td>
           <td style="border:1px solid #000;border-top:none;text-align:center;padding:6px;">
             <div style="font-weight:700;" id="pvSignDeptHead"></div>
             <div style="font-size:9.5px;">TIS Delivery Dept Head</div>
+            <div class="pv-sign-meta" id="pvTsDeptHead"></div>
           </td>
           <td style="border:1px solid #000;border-top:none;text-align:center;padding:6px;">
             <div style="font-weight:700;" id="pvSignDivHead"></div>
             <div style="font-size:9.5px;">Division Head</div>
+            <div class="pv-sign-meta" id="pvTsDivHead"></div>
           </td>
         </tr>
       </table>
@@ -1244,6 +1292,31 @@ function loadMySubmissionStatus(){
       render(); // supaya badge lock di baris timesheet ikut ke-refresh
     })
     .catch(()=>{});
+  loadMySubmissions(); // isi panel "Riwayat Periode Saya" + cache buat Export PDF
+}
+
+// Render panel "Riwayat Periode Saya" — daftar semua periode yang pernah
+// disubmit consultant ini, biar gampang nyari yang statusnya Approved lalu
+// langsung export PDF-nya (lengkap dgn ttd & timestamp approval asli).
+function renderMyPeriodHistory(){
+  const wrap = document.getElementById('myPeriodHistoryList');
+  if(!wrap) return;
+  if(!MY_SUBMISSIONS.length){
+    wrap.innerHTML = '<div class="text-[11px] text-slate-400 text-center py-2">Belum ada riwayat submit.</div>';
+    return;
+  }
+  wrap.innerHTML = MY_SUBMISSIONS.map(sub=>`
+    <div style="border:1px solid var(--border);border-radius:8px;padding:6px 8px;display:flex;align-items:center;justify-content:space-between;gap:6px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${sub.PeriodStart||'-'} s/d ${sub.PeriodEnd||'-'}</div>
+        <div style="margin-top:2px;">${statusPillHTML(sub.Status)}</div>
+      </div>
+      <button class="btn btn-outline text-[10.5px] myPeriodPrintBtn" data-id="${sub.SubmissionID}" title="Export PDF" style="color:#DC2626;padding:5px 8px;"><i data-lucide="file-text" class="w-3 h-3"></i></button>
+    </div>`).join('');
+  lucide.createIcons();
+  wrap.querySelectorAll('.myPeriodPrintBtn').forEach(btn=>{
+    btn.addEventListener('click', ()=>printSubmission(btn.dataset.id));
+  });
 }
 function renderMySubmissionStatus(){
   const elStatus = document.getElementById('kpiApprovalStatus');
@@ -1987,29 +2060,51 @@ document.getElementById('btnExport').addEventListener('click',exportTimesheet);
 // =========================================================
 // EXPORT PDF (via browser print, template resmi Integra)
 // =========================================================
-// Nama approver default — sesuaikan kalau beda per project/consultant
-const APPROVAL_PROJECT_MANAGER = 'Jodie Satria Effendi';
-const APPROVAL_DEPT_HEAD       = 'Wisnu Hendra Pratama';
-const APPROVAL_DIVISION_HEAD   = 'Agus Triyanto';
+// Isi 1 slot tanda tangan (PM/Dept Head/Div Head) dari data approval asli:
+// gambar signature (base64, kalau approver sudah pernah upload), nama, dan
+// timestamp approve. Kalau tahap itu belum diproses, dikosongkan.
+function fillSignatureSlot(prefix, name, timestamp, signatureBase64){
+  document.getElementById('pvSign'+prefix).textContent = name || '';
+  document.getElementById('pvTs'+prefix).textContent = timestamp ? ('Disetujui: '+formatTimestampShort(timestamp)) : '';
+  const img = document.getElementById('pvImg'+prefix);
+  if(signatureBase64){ img.src = signatureBase64; img.style.display = ''; }
+  else { img.removeAttribute('src'); img.style.display = 'none'; }
+}
 
 // Isi template #pvRoot dari data apa pun (rowState personal ATAU rows hasil
-// fetch admin untuk consultant tertentu). year/month dipakai buat hitung
-// tanggal Inggris per baris (baris ke-idx = tanggal idx+1 di bulan itu).
+// fetch admin untuk consultant tertentu, ATAU detail submission asli).
+// year/month dipakai buat hitung tanggal Inggris per baris (baris ke-idx =
+// tanggal idx+1 di bulan itu). approval (opsional) = data asli dari sheet
+// Submissions (nama/timestamp/signature per tahap + Status keseluruhan) —
+// kalau tidak diisi berarti periode ini belum pernah disubmit (draft murni).
 // Parse tanggal dari row.date (format "15 Jul 2026", bulan Inggris) jadi Date object.
 // Dipakai buat cetak PDF supaya benar untuk periode apapun (gak terpaku ke 1 bulan kalender).
 function parseSheetDateKey(str){
   const d = new Date(str);
   return isNaN(d.getTime()) ? null : d;
 }
-function renderPrintDocument({consultant, position, project, customer, monthYearLabel, year, month, rows}){
+function renderPrintDocument({consultant, position, project, customer, monthYearLabel, year, month, rows, approval}){
   document.getElementById('pvConsultant').textContent = consultant || '-';
   document.getElementById('pvPosition').textContent    = position || '-';
   document.getElementById('pvProject').textContent     = project || '-';
   document.getElementById('pvMonthYear').textContent   = monthYearLabel || '-';
   document.getElementById('pvSignConsultant').textContent = consultant || '-';
-  document.getElementById('pvSignPM').textContent       = APPROVAL_PROJECT_MANAGER;
-  document.getElementById('pvSignDeptHead').textContent  = APPROVAL_DEPT_HEAD;
-  document.getElementById('pvSignDivHead').textContent   = APPROVAL_DIVISION_HEAD;
+
+  fillSignatureSlot('PM',       approval && approval.PM_Name,       approval && approval.PM_Timestamp,       approval && approval.PM_Signature);
+  fillSignatureSlot('DeptHead', approval && approval.DeptHead_Name, approval && approval.DeptHead_Timestamp, approval && approval.DeptHead_Signature);
+  fillSignatureSlot('DivHead',  approval && approval.DivHead_Name,  approval && approval.DivHead_Timestamp,  approval && approval.DivHead_Signature);
+
+  // Watermark kalau periode ini belum Approved penuh (masih Draft/Submitted/
+  // proses approval/Rejected) — tetap boleh diekspor untuk preview, tapi
+  // ditandai jelas supaya gak dianggap dokumen final.
+  const wm = document.getElementById('pvWatermark');
+  const status = approval && approval.Status;
+  if(status === 'Approved'){
+    wm.style.display = 'none';
+  } else {
+    wm.textContent = status ? 'BELUM FINAL — ' + statusLabelPlain(status) : 'BELUM FINAL — DRAFT';
+    wm.style.display = 'block';
+  }
 
   const tbody = document.getElementById('pvTbody');
   tbody.innerHTML = '';
@@ -2035,21 +2130,10 @@ function renderPrintDocument({consultant, position, project, customer, monthYear
   });
 }
 
-function buildPrintTimesheetView(){
-  const [sy,sm] = CURRENT_PERIOD.start.split('-').map(Number);
-  renderPrintDocument({
-    consultant: (CURRENT_USER && CURRENT_USER.fullname) || CONSULTANT_NAME || '-',
-    position:   (CURRENT_USER && CURRENT_USER.position) || '-',
-    project:    (CURRENT_USER && CURRENT_USER.project) || '-',
-    customer:   '-',
-    monthYearLabel: periodLabel(CURRENT_PERIOD),
-    year: sy, month: sm, // fallback saja kalau parseSheetDateKey gagal
-    rows: rowState
-  });
-}
-
-function exportTimesheetPDF(){
-  buildPrintTimesheetView();
+// Buka dialog print browser buat #pvRoot yang sudah diisi renderPrintDocument().
+// Dipakai bareng oleh export PDF consultant, admin, dan approver (semua sumbernya
+// beda tapi cara nge-print-nya sama).
+function triggerPvPrint(){
   document.body.classList.add('printing-pv');
   // Hapus mode print HANYA setelah dialog print beneran selesai/ditutup —
   // penting buat mobile (Android/iOS) yang dialog print-nya async, beda sama desktop.
@@ -2063,6 +2147,78 @@ function exportTimesheetPDF(){
   window.addEventListener('afterprint', ()=>clearTimeout(fallback));
   // Beri jeda dikit biar browser sempat re-render sebelum print dialog dibuka
   setTimeout(()=>{ window.print(); }, 150);
+}
+
+// Cache periode consultant yang login (dipakai panel "Riwayat Periode Saya"
+// dan buat cari tahu apakah periode yang lagi dibuka di Input Timesheet sudah
+// pernah disubmit/approved, supaya Export PDF di sana ikut nampilin ttd asli).
+let MY_SUBMISSIONS = [];
+async function loadMySubmissions(){
+  if(!APPS_SCRIPT_URL || !CONSULTANT_NAME) return;
+  try{
+    MY_SUBMISSIONS = await fetch(`${APPS_SCRIPT_URL}?action=getSubmissionsList&consultant=${encodeURIComponent(CONSULTANT_NAME)}`).then(r=>r.json());
+    if(!Array.isArray(MY_SUBMISSIONS)) MY_SUBMISSIONS = [];
+  }catch(e){ MY_SUBMISSIONS = []; }
+  renderMyPeriodHistory();
+}
+function findSubmissionForPeriod(list, period){
+  return (list||[]).find(s=>String(s.PeriodStart)===String(period.start) && String(s.PeriodEnd)===String(period.end));
+}
+
+// Cetak PDF dari 1 submission (periode yang sudah pernah disubmit) — dipakai
+// consultant (riwayat periode sendiri), admin (per approval), dan approver
+// (dari modal review). Ambil data lengkap+ttd asli lewat getSubmissionDetail,
+// susun baris harian, render, lalu print.
+async function printSubmission(submissionId){
+  if(!APPS_SCRIPT_URL || !submissionId) return;
+  try{
+    const detail = await fetch(`${APPS_SCRIPT_URL}?action=getSubmissionDetail&submissionId=${encodeURIComponent(submissionId)}`).then(r=>r.json());
+    if(detail.error){ showToast(detail.error,'err'); return; }
+    const period = { start: detail.PeriodStart, end: detail.PeriodEnd };
+    const [y,m] = String(detail.PeriodStart).split('-').map(Number);
+    const rows = buildDayRowsFromEntries(period, detail.timesheetRows || []);
+    const users = await fetch(`${APPS_SCRIPT_URL}?action=getUsers`).then(r=>r.json()).catch(()=>[]);
+    const userMeta = Array.isArray(users) ? users.find(u=>u.FullName===detail.Consultant) : null;
+    renderPrintDocument({
+      consultant: detail.Consultant,
+      position:   (userMeta && userMeta.Position) || '-',
+      project:    detail.Project || (userMeta && userMeta.Project) || '-',
+      customer:   '-',
+      monthYearLabel: periodLabel(period),
+      year: y, month: m,
+      rows: rows,
+      approval: detail
+    });
+    triggerPvPrint();
+  }catch(err){
+    console.error(err);
+    showToast('Gagal menyiapkan PDF timesheet.','err');
+  }
+}
+
+function buildPrintTimesheetView(){
+  const [sy,sm] = CURRENT_PERIOD.start.split('-').map(Number);
+  renderPrintDocument({
+    consultant: (CURRENT_USER && CURRENT_USER.fullname) || CONSULTANT_NAME || '-',
+    position:   (CURRENT_USER && CURRENT_USER.position) || '-',
+    project:    (CURRENT_USER && CURRENT_USER.project) || '-',
+    customer:   '-',
+    monthYearLabel: periodLabel(CURRENT_PERIOD),
+    year: sy, month: sm, // fallback saja kalau parseSheetDateKey gagal
+    rows: rowState,
+    approval: null // draft murni, belum ada submission — watermark DRAFT
+  });
+}
+
+// Export PDF di halaman Input Timesheet: kalau periode yang lagi dibuka
+// ternyata sudah pernah disubmit (ada di MY_SUBMISSIONS), pakai data
+// approval asli (ttd+timestamp asli). Kalau belum pernah disubmit sama
+// sekali, fallback ke preview draft (watermark "BELUM FINAL — DRAFT").
+async function exportTimesheetPDF(){
+  const match = findSubmissionForPeriod(MY_SUBMISSIONS, CURRENT_PERIOD);
+  if(match){ await printSubmission(match.SubmissionID); return; }
+  buildPrintTimesheetView();
+  triggerPvPrint();
 }
 document.getElementById('btnExportPDF').addEventListener('click', exportTimesheetPDF);
 
@@ -2162,6 +2318,15 @@ async function exportAdminTimesheetPDF(){
 
   try{
     const period = { start, end };
+    // Cek dulu apakah rentang tanggal ini persis sama dengan salah satu
+    // periode yang pernah disubmit consultant tsb — kalau ada, pakai jalur
+    // submission (dapat ttd + timestamp asli). Kalau bukan periode submission
+    // yang persis (misal admin iseng pilih rentang bebas), fallback ke data
+    // mentah tanpa approval (watermark "BELUM FINAL").
+    const subs = await fetch(`${APPS_SCRIPT_URL}?action=getSubmissionsList&consultant=${encodeURIComponent(consultant)}`).then(r=>r.json()).catch(()=>[]);
+    const match = findSubmissionForPeriod(Array.isArray(subs) ? subs : [], period);
+    if(match){ await printSubmission(match.SubmissionID); return; }
+
     const [users, entries] = await Promise.all([
       fetch(`${APPS_SCRIPT_URL}?action=getUsers`).then(r=>r.json()),
       fetch(`${APPS_SCRIPT_URL}?action=getAllTimesheet&consultant=${encodeURIComponent(consultant)}&startDate=${start}&endDate=${end}`).then(r=>r.json())
@@ -2177,18 +2342,10 @@ async function exportAdminTimesheetPDF(){
       customer:   '-',
       monthYearLabel: periodLabel(period),
       year: y, month: m,
-      rows: rows
+      rows: rows,
+      approval: null
     });
-
-    document.body.classList.add('printing-pv');
-    const cleanup = ()=>{
-      document.body.classList.remove('printing-pv');
-      window.removeEventListener('afterprint', cleanup);
-    };
-    window.addEventListener('afterprint', cleanup);
-    const fallback = setTimeout(cleanup, 15000);
-    window.addEventListener('afterprint', ()=>clearTimeout(fallback));
-    setTimeout(()=>{ window.print(); }, 150);
+    triggerPvPrint();
   }catch(err){
     console.error(err);
     showToast('Gagal menyiapkan PDF timesheet.','err');
@@ -2235,11 +2392,69 @@ document.querySelectorAll('.admin-tab-btn').forEach(btn=>{
     document.querySelectorAll('.admin-tab-btn').forEach(b=>{ b.className='admin-tab-btn btn btn-outline text-[11px]'; });
     btn.className='admin-tab-btn btn btn-blue text-[11px]';
     const tab = btn.dataset.atab;
-    document.getElementById('adminTabTimesheet').style.display = tab==='timesheet' ? '' : 'none';
-    document.getElementById('adminTabUsers').style.display     = tab==='users'     ? '' : 'none';
+    document.getElementById('adminTabTimesheet').style.display  = tab==='timesheet'  ? '' : 'none';
+    document.getElementById('adminTabApprovals').style.display  = tab==='approvals'  ? '' : 'none';
+    document.getElementById('adminTabUsers').style.display      = tab==='users'      ? '' : 'none';
     if(tab==='users') loadUserList();
+    if(tab==='approvals') loadAdminApprovalsList();
   });
 });
+
+// =========================================================
+// ADMIN — PRINT PER APPROVAL (list submission per periode, cari yg mau di-print)
+// =========================================================
+async function loadAdminApprovalsList(){
+  if(!APPS_SCRIPT_URL || !CURRENT_USER || CURRENT_USER.role !== 'admin') return;
+  const tbody   = document.getElementById('adminApprovalTBody');
+  const emptyEl = document.getElementById('adminApprovalEmpty');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#8A93A6;">⏳ Memuat data...</td></tr>';
+  emptyEl.classList.add('hidden');
+  try{
+    const filterUser   = document.getElementById('adminApprovalFilterUser').value;
+    const filterStatus = document.getElementById('adminApprovalFilterStatus').value;
+    const qs = `action=getSubmissionsList${filterUser?'&consultant='+encodeURIComponent(filterUser):''}${filterStatus?'&status='+encodeURIComponent(filterStatus):''}`;
+    const subs = await fetch(`${APPS_SCRIPT_URL}?${qs}`).then(r=>r.json());
+    const rows = Array.isArray(subs) ? subs : [];
+
+    // Populate consultant filter dropdown dari daftar submission (ambil semua, tanpa filter status)
+    if(!filterUser){
+      const all = filterStatus ? await fetch(`${APPS_SCRIPT_URL}?action=getSubmissionsList`).then(r=>r.json()).catch(()=>rows) : rows;
+      const names = [...new Set((Array.isArray(all)?all:rows).map(s=>s.Consultant).filter(Boolean))].sort();
+      const sel = document.getElementById('adminApprovalFilterUser');
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">Semua Consultant</option>' + names.map(n=>`<option value="${n}"${n===cur?' selected':''}>${n}</option>`).join('');
+    }
+
+    tbody.innerHTML = '';
+    if(!rows.length){ emptyEl.classList.remove('hidden'); return; }
+    tbody.innerHTML = rows.map(sub=>{
+      const lastAt = sub.Status==='Rejected' ? sub.RejectedAt : (sub.DivHead_Timestamp || sub.DeptHead_Timestamp || sub.PM_Timestamp || '');
+      return `<tr>
+        <td style="font-weight:600;font-size:12px;">${sub.Consultant||'-'}</td>
+        <td style="font-size:11.5px;">${sub.Project||'-'}</td>
+        <td>${sub.PeriodStart||'-'} s/d ${sub.PeriodEnd||'-'}</td>
+        <td>${statusPillHTML(sub.Status)}</td>
+        <td style="font-size:11px;color:#64748B;">${formatTimestampShort(lastAt)}</td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn-outline text-[11px] btnAdminViewApproval" data-id="${sub.SubmissionID}"><i data-lucide="eye" class="w-3.5 h-3.5"></i>Lihat</button>
+          <button class="btn btn-outline text-[11px] btnAdminPrintApproval" data-id="${sub.SubmissionID}" style="color:#DC2626;"><i data-lucide="file-text" class="w-3.5 h-3.5"></i>PDF</button>
+        </td>
+      </tr>`;
+    }).join('');
+    lucide.createIcons();
+    tbody.querySelectorAll('.btnAdminViewApproval').forEach(btn=>{
+      btn.addEventListener('click', ()=>openApprovalDetail(btn.dataset.id, true));
+    });
+    tbody.querySelectorAll('.btnAdminPrintApproval').forEach(btn=>{
+      btn.addEventListener('click', ()=>printSubmission(btn.dataset.id));
+    });
+  }catch(e){
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#DC2626;padding:20px;">Gagal memuat data</td></tr>';
+  }
+}
+document.getElementById('btnAdminApprovalRefresh').addEventListener('click', loadAdminApprovalsList);
+document.getElementById('adminApprovalFilterUser').addEventListener('change', loadAdminApprovalsList);
+document.getElementById('adminApprovalFilterStatus').addEventListener('change', loadAdminApprovalsList);
 
 // =========================================================
 // KELOLA USER
@@ -2520,6 +2735,10 @@ function statusPillHTML(status){
   const s = SUBMISSION_STATUS_BADGE[status] || { label: status||'-', color:'#64748B', bg:'#F1F5F9' };
   return `<span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;background:${s.bg};color:${s.color};">${s.label}</span>`;
 }
+function statusLabelPlain(status){
+  const s = SUBMISSION_STATUS_BADGE[status];
+  return s ? s.label : (status || 'Draft');
+}
 
 async function loadPendingApprovals(){
   if(!APPS_SCRIPT_URL || !CURRENT_USER || !APPROVER_ROLES.includes(CURRENT_USER.role)) return;
@@ -2689,6 +2908,10 @@ function closeApprovalDetail(){
 }
 document.getElementById('btnCloseApprovalDetail').addEventListener('click', closeApprovalDetail);
 document.getElementById('btnCloseApprovalDetail2').addEventListener('click', closeApprovalDetail);
+document.getElementById('btnPrintApprovalDetail').addEventListener('click', ()=>{
+  if(!CURRENT_APPROVAL_DETAIL) return;
+  printSubmission(CURRENT_APPROVAL_DETAIL.SubmissionID);
+});
 
 document.getElementById('btnApproveSubmission').addEventListener('click', async ()=>{
   if(!CURRENT_APPROVAL_DETAIL) return;
