@@ -161,8 +161,8 @@ html,body{overflow-x:hidden;max-width:100%;}
 }
 #pvRoot{display:none;position:relative;}
 #pvWatermark{display:none;position:absolute;top:38%;left:50%;transform:translate(-50%,-50%) rotate(-28deg);font-size:54px;font-weight:800;letter-spacing:.05em;color:rgba(220,38,38,.16);border:6px solid rgba(220,38,38,.16);border-radius:14px;padding:6px 34px;white-space:nowrap;pointer-events:none;z-index:5;}
-.pv-sign-img{max-height:100px;max-width:220px;object-fit:contain;display:block;margin:0 auto 3px;}
-.pv-sign-meta{font-size:10px;color:#5A6479;font-weight:500;margin-top:2px;}
+.pv-sign-img{max-height:44px;max-width:120px;object-fit:contain;display:block;margin:0 auto 2px;}
+.pv-sign-meta{font-size:8px;color:#5A6479;font-weight:400;margin-top:1px;}
 
 @media (max-width:1023px){
   aside{
@@ -284,9 +284,7 @@ html,body{overflow-x:hidden;max-width:100%;}
         <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="database" class="w-4 h-4"></i>Master Data</div>
         <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="bar-chart-3" class="w-4 h-4"></i>Report</div>
         <div id="navApprovalMenu" style="display:none;">
-          <div class="nav-item" data-view="approval" style="color:#22C55E;position:relative;"><i data-lucide="check-check" class="w-4 h-4"></i>Approval
-            <span id="navApprovalBadge" class="hidden" style="margin-left:auto;background:#DC2626;color:#fff;font-size:10px;font-weight:700;line-height:1;padding:3px 6px;border-radius:999px;">0</span>
-          </div>
+          <div class="nav-item" data-view="approval" style="color:#22C55E;"><i data-lucide="check-check" class="w-4 h-4"></i>Approval</div>
         </div>
         <div id="navAdminMenu" style="display:none;border-top:1px solid #1B2547;margin-top:8px;padding-top:8px;">
           <div class="nav-item" data-view="admin" style="color:#F59E0B;"><i data-lucide="shield" class="w-4 h-4"></i>Admin Panel</div>
@@ -295,7 +293,10 @@ html,body{overflow-x:hidden;max-width:100%;}
       </nav>
     </div>
     <div class="card p-3" style="background:#1B2547;border-color:#28325A;">
-      <div class="text-[10px] text-slate-500">© 2026 Integra Solusi Mandiri<br>v1.1.0</div>
+      <div class="text-[12px] font-semibold text-white mb-1">Butuh Bantuan?</div>
+      <div class="text-[11px] text-slate-400 mb-2">Hubungi Tim Support kami</div>
+      <button class="btn btn-blue w-full justify-center text-[11px]"><i data-lucide="headset" class="w-3.5 h-3.5"></i>Hubungi Support</button>
+      <div class="text-[10px] text-slate-500 mt-3">© 2026 Integra Solusi Mandiri<br>v1.1.0</div>
     </div>
   </aside>
 
@@ -311,7 +312,7 @@ html,body{overflow-x:hidden;max-width:100%;}
         <h1 class="text-lg font-bold" id="pageTitle">Dashboard</h1>
       </div>
       <div class="flex items-center gap-4">
-        <button id="topbarPeriodChip" type="button" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium" style="background:#F4F6FB;border:1px solid var(--border);cursor:pointer;" title="Ganti periode"><i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i><span id="topbarPeriodChipLabel">-</span><i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i></button>
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium" style="background:#F4F6FB;border:1px solid var(--border);"><i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>Juli 2026<i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i></div>
         <button id="btnConnectSheet" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#FEF2E3;color:#92680B;border:1px solid #F5E6A8;"><i data-lucide="plug-zap" class="w-3.5 h-3.5"></i><span id="connStatus">Sambungkan Google Sheets</span></button>
         <button id="btnMasterDataOpen" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#F2ECFE;color:#6D28D9;border:1px solid #DDD6FE;"><i data-lucide="database" class="w-3.5 h-3.5"></i>Master Data</button>
         <div class="relative"><i data-lucide="bell" class="w-5 h-5 text-slate-500"></i><span class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold">5</span></div>
@@ -616,7 +617,7 @@ html,body{overflow-x:hidden;max-width:100%;}
 
         <div id="approvalHistoryPanel" style="overflow-x:auto;display:none;">
           <table class="ts"><thead><tr>
-            <th>Consultant</th><th>Project</th><th>Periode</th><th>Status</th><th>Keterangan</th><th>Tanggal Aksi</th><th>Aksi</th>
+            <th>Consultant</th><th>Project</th><th>Periode</th><th>Status</th><th>Tanggal Aksi</th><th>Aksi</th>
           </tr></thead><tbody id="approvalHistoryTBody"></tbody></table>
           <div id="approvalHistoryEmpty" class="hidden text-center py-8 text-slate-400 text-sm">Belum ada riwayat approval yang Anda proses.</div>
         </div>
@@ -706,7 +707,7 @@ html,body{overflow-x:hidden;max-width:100%;}
             <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Start Kontrak</label><input id="uStartKontrak" type="date"></div>
             <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">End Kontrak</label><input id="uEndKontrak" type="date"></div>
             <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Role</label>
-              <select id="uRole"><option value="user">User (Freelance)</option><option value="admin">Admin</option><option value="approver_pm">Approver - Project Manager</option><option value="approver_depthead">Approver - Dept Head</option><option value="approver_divhead">Approver - Division Head</option></select>
+              <select id="uRole"><option value="user">User (Consultant)</option><option value="admin">Admin</option><option value="approver_pm">Approver - Project Manager</option><option value="approver_depthead">Approver - Dept Head</option><option value="approver_divhead">Approver - Division Head</option></select>
             </div>
             <div><label class="text-[11px] font-semibold text-slate-500 block mb-1">Status</label>
               <select id="uStatus"><option value="Aktif">Aktif</option><option value="Non-aktif">Non-aktif</option></select>
@@ -820,11 +821,11 @@ html,body{overflow-x:hidden;max-width:100%;}
           <td style="width:22%;border:1px solid #000;text-align:center;font-weight:700;padding:6px;">Approved by,</td>
         </tr>
         <tr>
-          <td style="border-left:1px solid #000;border-right:1px solid #000;height:110px;vertical-align:bottom;text-align:center;"></td>
+          <td style="border-left:1px solid #000;border-right:1px solid #000;height:60px;vertical-align:bottom;text-align:center;"></td>
           <td></td>
-          <td style="border-left:1px solid #000;border-right:1px solid #000;height:110px;vertical-align:bottom;text-align:center;"><img id="pvImgPM" class="pv-sign-img" style="display:none;"></td>
-          <td style="border-left:1px solid #000;border-right:1px solid #000;height:110px;vertical-align:bottom;text-align:center;"><img id="pvImgDeptHead" class="pv-sign-img" style="display:none;"></td>
-          <td style="border-left:1px solid #000;border-right:1px solid #000;height:110px;vertical-align:bottom;text-align:center;"><img id="pvImgDivHead" class="pv-sign-img" style="display:none;"></td>
+          <td style="border-left:1px solid #000;border-right:1px solid #000;vertical-align:bottom;text-align:center;"><img id="pvImgPM" class="pv-sign-img" style="display:none;"></td>
+          <td style="border-left:1px solid #000;border-right:1px solid #000;vertical-align:bottom;text-align:center;"><img id="pvImgDeptHead" class="pv-sign-img" style="display:none;"></td>
+          <td style="border-left:1px solid #000;border-right:1px solid #000;vertical-align:bottom;text-align:center;"><img id="pvImgDivHead" class="pv-sign-img" style="display:none;"></td>
         </tr>
         <tr>
           <td style="border:1px solid #000;border-top:none;text-align:center;font-weight:700;padding:6px;" id="pvSignConsultant"></td>
@@ -1006,24 +1007,10 @@ function initSession(user){
   document.getElementById('sidebarName').textContent  = user.fullname;
   document.getElementById('userAvatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.fullname)}`;
 
-  // FIX (bug "bocor" Admin Panel ke akun lain): reset SEMUA view & menu utama
-  // ke kondisi default di awal SETIAP login — supaya sisa tampilan dari sesi
-  // sebelumnya (mis. admin logout lalu user lain login) gak numpuk/"bocor"
-  // ke akun yang baru login. Sebelumnya adminView cuma pernah di-nyalain,
-  // gak pernah di-matiin lagi waktu logout atau waktu role lain login.
-  document.getElementById('view-entry-wrap').style.display = '';
-  document.getElementById('adminView').style.display = 'none';
-  document.getElementById('approvalView').style.display = 'none';
-  document.getElementById('navAdminMenu').style.display = 'none';
-  document.getElementById('navApprovalMenu').style.display = 'none';
-  document.getElementById('navTimesheetGroup').style.display = '';
-  document.getElementById('navDashboardItem').style.display = '';
-  document.getElementById('pageTitle').textContent = 'Dashboard';
-
   const isApprover = APPROVER_ROLES.includes(user.role);
   document.getElementById('sidebarRole').textContent = isApprover
     ? (APPROVER_LABELS[user.role] || 'Approver')
-    : (user.role === 'admin' ? 'Administrator' : 'Freelance');
+    : (user.role === 'admin' ? 'Administrator' : 'Consultant');
 
   if(isApprover){
     // Login approver hanya bisa lihat menu Approval (read-only review) — menu lain disembunyikan total
@@ -1085,18 +1072,6 @@ function updateInfoCard(){
   if(monthEl){
     monthEl.textContent = periodLabel(CURRENT_PERIOD);
   }
-  // Chip periode di topbar: cuma relevan buat role 'user' (yang isi timesheet
-  // per periode). Admin/approver kerja lintas-periode, jadi chip disembunyikan.
-  const chipEl = document.getElementById('topbarPeriodChip');
-  const chipLabelEl = document.getElementById('topbarPeriodChipLabel');
-  if(chipEl && chipLabelEl){
-    if(CURRENT_USER.role === 'user'){
-      chipLabelEl.textContent = periodLabel(CURRENT_PERIOD);
-      chipEl.style.display = '';
-    } else {
-      chipEl.style.display = 'none';
-    }
-  }
   // Customer dicari dari master project (PROJECTS) berdasarkan nama Project user
   let customer = CURRENT_USER.customer || '';
   if(!customer && CURRENT_USER.project && typeof PROJECTS !== 'undefined'){
@@ -1118,8 +1093,6 @@ function logout(){
   document.getElementById('navAdminMenu').style.display = 'none';
   document.getElementById('navApprovalMenu').style.display = 'none';
   document.getElementById('approvalView').style.display = 'none';
-  document.getElementById('adminView').style.display = 'none';
-  document.getElementById('view-entry-wrap').style.display = '';
   document.getElementById('navTimesheetGroup').style.display = '';
   document.getElementById('navDashboardItem').style.display = '';
   ['infoConsultantName','infoCustomer','infoPosition','infoProject','infoMonthYear'].forEach(id=>{
@@ -1342,7 +1315,7 @@ function renderMyPeriodHistory(){
     </div>`).join('');
   lucide.createIcons();
   wrap.querySelectorAll('.myPeriodPrintBtn').forEach(btn=>{
-    btn.addEventListener('click', ()=>printSubmission(btn.dataset.id, btn));
+    btn.addEventListener('click', ()=>printSubmission(btn.dataset.id));
   });
 }
 function renderMySubmissionStatus(){
@@ -2160,27 +2133,6 @@ function renderPrintDocument({consultant, position, project, customer, monthYear
 // Buka dialog print browser buat #pvRoot yang sudah diisi renderPrintDocument().
 // Dipakai bareng oleh export PDF consultant, admin, dan approver (semua sumbernya
 // beda tapi cara nge-print-nya sama).
-// Helper generik: kunci tombol + tampilkan spinner (pakai class .btn-loading
-// yang sudah ada) selama proses async berjalan, biar user gak bisa klik
-// berkali-kali saat ada delay (fetch detail submission -> render -> print).
-// Dipakai di semua titik Export PDF (Input Timesheet, Riwayat Periode Saya,
-// Admin > Print per Approval, modal Review Approval).
-function setBtnLoading(btn, loading, loadingHTML){
-  if(!btn) return;
-  if(loading){
-    if(btn.classList.contains('btn-loading')) return; // sudah proses, abaikan klik ganda
-    btn.dataset.origHtml = btn.innerHTML;
-    btn.classList.add('btn-loading');
-    btn.disabled = true;
-    if(loadingHTML) btn.innerHTML = loadingHTML;
-  } else {
-    btn.classList.remove('btn-loading');
-    btn.disabled = false;
-    if(btn.dataset.origHtml !== undefined){ btn.innerHTML = btn.dataset.origHtml; delete btn.dataset.origHtml; }
-    lucide.createIcons();
-  }
-}
-
 function triggerPvPrint(){
   document.body.classList.add('printing-pv');
   // Hapus mode print HANYA setelah dialog print beneran selesai/ditutup —
@@ -2217,10 +2169,8 @@ function findSubmissionForPeriod(list, period){
 // consultant (riwayat periode sendiri), admin (per approval), dan approver
 // (dari modal review). Ambil data lengkap+ttd asli lewat getSubmissionDetail,
 // susun baris harian, render, lalu print.
-async function printSubmission(submissionId, btnEl){
+async function printSubmission(submissionId){
   if(!APPS_SCRIPT_URL || !submissionId) return;
-  if(btnEl && btnEl.classList.contains('btn-loading')) return; // lagi proses, abaikan klik ganda
-  setBtnLoading(btnEl, true);
   try{
     const detail = await fetch(`${APPS_SCRIPT_URL}?action=getSubmissionDetail&submissionId=${encodeURIComponent(submissionId)}`).then(r=>r.json());
     if(detail.error){ showToast(detail.error,'err'); return; }
@@ -2243,8 +2193,6 @@ async function printSubmission(submissionId, btnEl){
   }catch(err){
     console.error(err);
     showToast('Gagal menyiapkan PDF timesheet.','err');
-  }finally{
-    setBtnLoading(btnEl, false);
   }
 }
 
@@ -2272,16 +2220,7 @@ async function exportTimesheetPDF(){
   buildPrintTimesheetView();
   triggerPvPrint();
 }
-document.getElementById('btnExportPDF').addEventListener('click', async ()=>{
-  const btn = document.getElementById('btnExportPDF');
-  if(btn.classList.contains('btn-loading')) return;
-  setBtnLoading(btn, true, '<i data-lucide="loader-circle" class="w-3.5 h-3.5" style="animation:spin .7s linear infinite;"></i>Menyiapkan PDF...');
-  try{
-    await exportTimesheetPDF();
-  }finally{
-    setBtnLoading(btn, false);
-  }
-});
+document.getElementById('btnExportPDF').addEventListener('click', exportTimesheetPDF);
 
 // =========================================================
 // ADMIN PANEL
@@ -2507,7 +2446,7 @@ async function loadAdminApprovalsList(){
       btn.addEventListener('click', ()=>openApprovalDetail(btn.dataset.id, true));
     });
     tbody.querySelectorAll('.btnAdminPrintApproval').forEach(btn=>{
-      btn.addEventListener('click', ()=>printSubmission(btn.dataset.id, btn));
+      btn.addEventListener('click', ()=>printSubmission(btn.dataset.id));
     });
   }catch(e){
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#DC2626;padding:20px;">Gagal memuat data</td></tr>';
@@ -2749,7 +2688,6 @@ function closePeriodeModal(){
   document.getElementById('modalPeriode').style.display = 'none';
 }
 document.getElementById('btnGantiPeriode').addEventListener('click', openPeriodeModal);
-document.getElementById('topbarPeriodChip').addEventListener('click', openPeriodeModal);
 document.getElementById('btnModalPeriodeClose').addEventListener('click', closePeriodeModal);
 document.getElementById('btnModalPeriodeCancel').addEventListener('click', closePeriodeModal);
 document.getElementById('modalPeriode').addEventListener('click', e=>{ if(e.target===document.getElementById('modalPeriode')) closePeriodeModal(); });
@@ -2811,48 +2749,23 @@ async function loadPendingApprovals(){
     const list = await fetch(url).then(r=>r.json());
     PENDING_APPROVALS = Array.isArray(list) ? list : [];
     renderApprovalList();
-    updateApprovalBadge();
   }catch(e){
     tbody.innerHTML = `<tr><td colspan="6" class="text-center text-red-400 py-6">Gagal memuat data approval.</td></tr>`;
-  }
-}
-
-// Badge merah di menu sidebar "Approval" — nyala kalau approver ini punya
-// pengajuan yang menunggu giliran review-nya, biar kelihatan ada kerjaan
-// tanpa harus buka tab Approval dulu.
-function updateApprovalBadge(){
-  const badge = document.getElementById('navApprovalBadge');
-  if(!badge) return;
-  const count = PENDING_APPROVALS.length;
-  if(count > 0){
-    badge.textContent = count > 99 ? '99+' : String(count);
-    badge.classList.remove('hidden');
-  } else {
-    badge.classList.add('hidden');
   }
 }
 
 async function loadApprovalHistory(){
   if(!APPS_SCRIPT_URL || !CURRENT_USER || !APPROVER_ROLES.includes(CURRENT_USER.role)) return;
   const tbody = document.getElementById('approvalHistoryTBody');
-  tbody.innerHTML = `<tr><td colspan="7" class="text-center text-slate-400 py-6">Memuat data...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="6" class="text-center text-slate-400 py-6">Memuat data...</td></tr>`;
   try{
     const url = `${APPS_SCRIPT_URL}?action=getPendingApprovals&role=${encodeURIComponent(CURRENT_USER.role)}&username=${encodeURIComponent(CURRENT_USER.username)}&mode=history`;
     const list = await fetch(url).then(r=>r.json());
     APPROVAL_HISTORY = Array.isArray(list) ? list : [];
     renderApprovalHistory();
   }catch(e){
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-red-400 py-6">Gagal memuat riwayat.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-red-400 py-6">Gagal memuat riwayat.</td></tr>`;
   }
-}
-
-// Jumlah hari kalender dalam rentang periode (dipakai kolom "Jumlah Hari"
-// di tabel Menunggu Approval — sebelumnya cuma "-" statis, gak dihitung).
-function periodDayCount(start, end){
-  const s = new Date(start), e = new Date(end);
-  if(isNaN(s.getTime()) || isNaN(e.getTime())) return '-';
-  const days = Math.round((e - s) / 86400000) + 1;
-  return days > 0 ? `${days} hari` : '-';
 }
 
 function renderApprovalList(){
@@ -2869,7 +2782,7 @@ function renderApprovalList(){
       <td style="font-weight:600;">${sub.Consultant||'-'}</td>
       <td>${sub.Project||'-'}</td>
       <td>${sub.PeriodStart||'-'} s/d ${sub.PeriodEnd||'-'}</td>
-      <td>${periodDayCount(sub.PeriodStart, sub.PeriodEnd)}</td>
+      <td>-</td>
       <td><button class="btn btn-blue text-[11px] btnReviewSubmission" data-id="${sub.SubmissionID}"><i data-lucide="eye" class="w-3.5 h-3.5"></i>Review</button></td>
     </tr>`;
   }).join('');
@@ -2897,7 +2810,6 @@ function renderApprovalHistory(){
       <td>${sub.Project||'-'}</td>
       <td>${sub.PeriodStart||'-'} s/d ${sub.PeriodEnd||'-'}</td>
       <td>${statusPillHTML(sub.Status)}</td>
-      <td style="font-size:11px;color:#64748B;max-width:220px;">${approvalHistoryCaption(sub)}</td>
       <td style="font-size:11px;color:#64748B;">${formatTimestampShort(actionAt)}</td>
       <td><button class="btn btn-outline text-[11px] btnViewSubmissionHistory" data-id="${sub.SubmissionID}"><i data-lucide="eye" class="w-3.5 h-3.5"></i>Lihat</button></td>
     </tr>`;
@@ -2906,27 +2818,6 @@ function renderApprovalHistory(){
   tbody.querySelectorAll('.btnViewSubmissionHistory').forEach(btn=>{
     btn.addEventListener('click', ()=>openApprovalDetail(btn.dataset.id, true));
   });
-}
-
-// Keterangan singkat di tab Riwayat approver — biar gak cuma lihat status
-// pill mentah, tapi juga tau posisi pengajuan itu sekarang: apakah sudah
-// kelar total, masih jalan ke tahap berikutnya, atau ditolak & kenapa.
-function approvalHistoryCaption(sub){
-  if(sub.Status === 'Rejected'){
-    const by = sub.RejectedBy ? ` oleh ${sub.RejectedBy}` : '';
-    const reason = sub.RejectReason ? ` — "${sub.RejectReason}"` : '';
-    return `Ditolak${by}${reason}`;
-  }
-  if(sub.Status === 'Approved'){
-    return 'Selesai — sudah disetujui penuh (PM → Dept Head → Div Head).';
-  }
-  if(sub.Status === 'Approved_PM'){
-    return 'Sudah Anda approve — menunggu approval Dept Head.';
-  }
-  if(sub.Status === 'Approved_DeptHead'){
-    return 'Sudah diteruskan — menunggu approval Division Head.';
-  }
-  return '-';
 }
 
 function formatTimestampShort(val){
@@ -3019,7 +2910,7 @@ document.getElementById('btnCloseApprovalDetail').addEventListener('click', clos
 document.getElementById('btnCloseApprovalDetail2').addEventListener('click', closeApprovalDetail);
 document.getElementById('btnPrintApprovalDetail').addEventListener('click', ()=>{
   if(!CURRENT_APPROVAL_DETAIL) return;
-  printSubmission(CURRENT_APPROVAL_DETAIL.SubmissionID, document.getElementById('btnPrintApprovalDetail'));
+  printSubmission(CURRENT_APPROVAL_DETAIL.SubmissionID);
 });
 
 document.getElementById('btnApproveSubmission').addEventListener('click', async ()=>{
