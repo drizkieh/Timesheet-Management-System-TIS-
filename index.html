@@ -1677,17 +1677,41 @@ function showHrsSuggest(inputEl, idx){
 }
 
 // Status per baris timesheet (kolom Status di sheet Timesheet, di-set via
-// updateTimesheetStatus di backend) -> info badge terkunci di tabel consultant
-function getRowLockInfo(status){
+// updateTimesheetStatus di backend) -> info badge terkunci di tabel consultant.
+// `sub` = MY_LATEST_SUBMISSION (submission periode ini), dipakai buat nampilin
+// tanggal approve + catatan approver begitu satu tahap sudah disetujui —
+// bukan cuma "menunggu tahap berikutnya" tapi juga "sudah disetujui siapa,
+// kapan, dan catatannya apa" (kalau approver isi komentar waktu approve).
+function getRowLockInfo(status, sub){
+  const ts = v => v ? formatTimestampShort(v) : '';
+  const noteOf = c => c ? ` — catatan: "${c}"` : '';
   switch(status){
     case 'Submitted':
       return { locked:true, label:'Menunggu PM', icon:'clock', color:'#92680B', bg:'#FFFBEB', badgeBg:'#FEF2E3' };
-    case 'Approved_PM':
-      return { locked:true, label:'Menunggu Dept Head', icon:'clock', color:'#92680B', bg:'#FFFBEB', badgeBg:'#FEF2E3' };
-    case 'Approved_DeptHead':
-      return { locked:true, label:'Menunggu Div Head', icon:'clock', color:'#92680B', bg:'#FFFBEB', badgeBg:'#FEF2E3' };
-    case 'Approved':
-      return { locked:true, label:'Approved', icon:'lock', color:'#6D28D9', bg:'#F5F3FF', badgeBg:'#F2ECFE' };
+    case 'Approved_PM': {
+      const t = sub ? ts(sub.PM_Timestamp) : '';
+      return {
+        locked:true, icon:'check-circle-2', color:'#15803D', bg:'#F0FDF4', badgeBg:'#DCFCE7',
+        label: `✓ Disetujui PM${t ? ' • '+t : ''}`,
+        tooltip: `Disetujui PM${t ? ' pada '+t : ''}${sub?noteOf(sub.PM_Comment):''} — sekarang menunggu Dept Head`
+      };
+    }
+    case 'Approved_DeptHead': {
+      const t = sub ? ts(sub.DeptHead_Timestamp) : '';
+      return {
+        locked:true, icon:'check-circle-2', color:'#15803D', bg:'#F0FDF4', badgeBg:'#DCFCE7',
+        label: `✓ Disetujui Dept Head${t ? ' • '+t : ''}`,
+        tooltip: `Disetujui Dept Head${t ? ' pada '+t : ''}${sub?noteOf(sub.DeptHead_Comment):''} — sekarang menunggu Division Head`
+      };
+    }
+    case 'Approved': {
+      const t = sub ? ts(sub.DivHead_Timestamp) : '';
+      return {
+        locked:true, icon:'badge-check', color:'#6D28D9', bg:'#F5F3FF', badgeBg:'#F2ECFE',
+        label: `Approved${t ? ' • '+t : ''}`,
+        tooltip: `Disetujui penuh (PM → Dept Head → Division Head)${t ? ' — final: '+t : ''}${sub?noteOf(sub.DivHead_Comment):''}`
+      };
+    }
     default:
       return { locked:false };
   }
@@ -1729,13 +1753,13 @@ function render(){
       // Semua baris non-holiday editable — KECUALI kalau sudah masuk approval
       // (status selain Draft), maka dikunci supaya tidak berubah saat direview.
       const p = r.pid ? (PROJECTS[r.pid]||{name:'-',customer:'-',phase:'-'}) : {name:'-',customer:'-',phase:'-'};
-      const lock = getRowLockInfo(r.status);
+      const lock = getRowLockInfo(r.status, MY_LATEST_SUBMISSION);
       const rowBg = lock.locked ? `background:${lock.bg};` : (r.filled ? 'background:#F0FDF4;' : '');
       const syncDot = r.sheetRowId
         ? `<span title="Tersimpan di Sheets" style="width:6px;height:6px;border-radius:999px;background:#22C55E;display:inline-block;margin-left:4px;"></span>`
         : `<span title="Belum disimpan" style="width:6px;height:6px;border-radius:999px;background:#D1D5DB;display:inline-block;margin-left:4px;"></span>`;
       const lockBadge = lock.locked
-        ? `<span title="${lock.label}" style="font-size:9px;padding:2px 6px;border-radius:6px;background:${lock.badgeBg};color:${lock.color};display:inline-flex;align-items:center;gap:3px;white-space:nowrap;font-weight:600;"><i data-lucide="${lock.icon}" class="w-2.5 h-2.5"></i>${lock.label}</span>`
+        ? `<span title="${lock.tooltip||lock.label}" style="font-size:9px;padding:2px 6px;border-radius:6px;background:${lock.badgeBg};color:${lock.color};display:inline-flex;align-items:center;gap:3px;white-space:nowrap;font-weight:600;"><i data-lucide="${lock.icon}" class="w-2.5 h-2.5"></i>${lock.label}</span>`
         : '';
       const dis = lock.locked ? 'disabled' : '';
       tr.innerHTML=`
