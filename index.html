@@ -97,8 +97,6 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
 /* Login loading spinner */
 .login-spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px;}
 /* Nav item disabled */
-.nav-item.nav-disabled{opacity:.4;cursor:not-allowed;pointer-events:none;text-decoration:line-through;text-decoration-color:#6B7A99;}
-.nav-item.nav-disabled:hover{background:none;color:#A7B0C4;}
 /* Tombol loading state */
 .btn-loading{position:relative;pointer-events:none;opacity:.8;}
 .btn-loading::after{content:'';display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin-left:8px;vertical-align:middle;}
@@ -207,6 +205,15 @@ html,body{overflow-x:hidden;max-width:100%;}
   #masterTableWrap{overflow-x:auto;}
   table.master-tbl{min-width:600px;}
 }
+
+/* Dropdown minimalis — dipakai buat overflow menu toolbar & menu avatar */
+.dd-wrap{position:relative;}
+.dd-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:190px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(15,23,42,.12);padding:6px;z-index:60;display:none;}
+.dd-menu.show{display:block;}
+.dd-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;font-size:12.5px;font-weight:500;color:#334155;cursor:pointer;white-space:nowrap;}
+.dd-item:hover{background:#F4F6FB;}
+.dd-item i{width:14px;height:14px;flex-shrink:0;color:#64748B;}
+.dd-sep{height:1px;background:var(--border);margin:5px 2px;}
 </style>
 </head>
 <body>
@@ -276,27 +283,17 @@ html,body{overflow-x:hidden;max-width:100%;}
       <nav class="space-y-1">
         <div class="nav-item active" data-view="dashboard" id="navDashboardItem"><i data-lucide="layout-dashboard" class="w-4 h-4"></i>Dashboard</div>
         <div id="navTimesheetGroup">
-          <div class="nav-item" id="menuTimesheet"><i data-lucide="calendar-clock" class="w-4 h-4"></i>Timesheet<i data-lucide="chevron-down" class="w-3.5 h-3.5 ml-auto"></i></div>
-          <div class="ml-8 mt-1 space-y-1 text-[12.5px]" id="submenuTimesheet">
-            <div class="nav-item active" data-view="entry" style="padding-left:9px;"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>Input Timesheet</div>
-            <div class="nav-item nav-disabled" style="padding-left:9px;" title="Belum tersedia"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>My Timesheet</div>
-          </div>
+          <div class="nav-item active" data-view="entry" id="menuTimesheet"><i data-lucide="calendar-clock" class="w-4 h-4"></i>Input Timesheet</div>
         </div>
-        <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="briefcase" class="w-4 h-4"></i>Project</div>
-        <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="database" class="w-4 h-4"></i>Master Data</div>
-        <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="bar-chart-3" class="w-4 h-4"></i>Report</div>
         <div id="navApprovalMenu" style="display:none;">
           <div class="nav-item" data-view="approval" style="color:#22C55E;"><i data-lucide="check-check" class="w-4 h-4"></i>Approval<span id="navApprovalBadge" style="display:none;margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;">0</span></div>
         </div>
         <div id="navAdminMenu" style="display:none;border-top:1px solid #1B2547;margin-top:8px;padding-top:8px;">
           <div class="nav-item" data-view="admin" style="color:#F59E0B;"><i data-lucide="shield" class="w-4 h-4"></i>Admin Panel</div>
         </div>
-        <div class="nav-item nav-disabled" title="Belum tersedia"><i data-lucide="settings" class="w-4 h-4"></i>Setting</div>
       </nav>
     </div>
-    <div class="card p-3" style="background:#1B2547;border-color:#28325A;">
-      <div class="text-[10px] text-slate-500">© 2026 Integra Solusi Mandiri<br>v1.1.0</div>
-    </div>
+    <div style="text-align:center;font-size:10px;color:#5B6684;padding:8px 0 2px;">© 2026 Integra Solusi Mandiri · v1.2.0</div>
   </aside>
 
   <!-- SIDEBAR OVERLAY (mobile) -->
@@ -310,16 +307,21 @@ html,body{overflow-x:hidden;max-width:100%;}
         <button id="menuToggleBtn" aria-label="Toggle menu"><i data-lucide="menu" class="w-5 h-5 text-slate-500"></i></button>
         <h1 class="text-lg font-bold" id="pageTitle">Dashboard</h1>
       </div>
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-3">
         <div id="topbarPeriodChip" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium" style="background:#F4F6FB;border:1px solid var(--border);cursor:pointer;" title="Klik untuk ganti periode timesheet"><i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i><span id="topbarPeriodLabel">-</span><i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i></div>
-        <button id="btnConnectSheet" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#FEF2E3;color:#92680B;border:1px solid #F5E6A8;"><i data-lucide="plug-zap" class="w-3.5 h-3.5"></i><span id="connStatus">Sambungkan Google Sheets</span></button>
-        <button id="btnMasterDataOpen" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#F2ECFE;color:#6D28D9;border:1px solid #DDD6FE;"><i data-lucide="database" class="w-3.5 h-3.5"></i>Master Data</button>
-        <button id="btnOpenSignatureModalGlobal" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#EAF2FF;color:#1D4ED8;border:1px solid #C7DBFB;" title="Upload/lihat tanda tangan Anda — dipakai otomatis di PDF timesheet"><i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>Tanda Tangan Saya</button>
-        <div class="relative"><i data-lucide="bell" class="w-5 h-5 text-slate-500"></i><span class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold">5</span></div>
-        <div class="flex items-center gap-2">
-          <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Devry" class="w-8 h-8 rounded-full"/>
-          <span class="text-xs font-semibold">Devry Rizkie H</span>
-          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+        <button id="btnConnectSheet" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold" style="background:#FEF2E3;color:#92680B;border:1px solid #F5E6A8;" title="Status koneksi Google Sheets"><i data-lucide="plug-zap" class="w-3.5 h-3.5"></i><span id="connStatus">Sambungkan</span></button>
+        <div class="dd-wrap">
+          <button id="userMenuTrigger" class="flex items-center gap-2" style="background:none;border:none;cursor:pointer;padding:2px;">
+            <img id="userAvatar2" src="https://api.dicebear.com/7.x/avataaars/svg?seed=User" class="w-8 h-8 rounded-full"/>
+            <span class="text-xs font-semibold" id="topbarUserName">-</span>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+          </button>
+          <div class="dd-menu" id="userMenu">
+            <div class="dd-item" id="btnOpenSignatureModalGlobal"><i data-lucide="pen-tool"></i>Tanda Tangan Saya</div>
+            <div class="dd-item" id="btnMasterDataOpen"><i data-lucide="database"></i>Master Data</div>
+            <div class="dd-sep"></div>
+            <div class="dd-item" onclick="logout()" style="color:#DC2626;"><i data-lucide="log-out" style="color:#DC2626;"></i>Logout</div>
+          </div>
         </div>
       </div>
     </header>
@@ -330,18 +332,14 @@ html,body{overflow-x:hidden;max-width:100%;}
       <div class="grid grid-cols-[1fr_320px] gap-5">
         <div>
           <!-- KPI ROW -->
-          <div class="grid grid-cols-4 gap-4 mb-5">
-            <div class="card p-4 flex items-center gap-3">
-              <div class="icon-circle" style="background:#E9F0FE;"><i data-lucide="briefcase" class="w-5 h-5" style="color:var(--blue);"></i></div>
-              <div><div class="text-[11px] text-slate-400">Total Project</div><div class="text-xl font-bold" id="kpiTotalProject">-</div><div class="text-[10px] text-slate-400">Active Project</div></div>
-            </div>
+          <div class="grid grid-cols-3 gap-4 mb-5">
             <div class="card p-4 flex items-center gap-3">
               <div class="icon-circle" style="background:#E7F9EE;"><i data-lucide="calendar-check" class="w-5 h-5" style="color:var(--green);"></i></div>
-              <div><div class="text-[11px] text-slate-400">Timesheet Bulan Ini</div><div class="text-xl font-bold">21 <span class="text-sm text-slate-400 font-normal">/ 22</span></div><div class="text-[10px] text-slate-400">Hari diisi</div></div>
+              <div><div class="text-[11px] text-slate-400">Timesheet Bulan Ini</div><div class="text-xl font-bold"><span id="kpiDaysFilled">-</span> <span class="text-sm text-slate-400 font-normal">/ <span id="kpiDaysTotal">-</span></span></div><div class="text-[10px] text-slate-400">Hari diisi</div></div>
             </div>
             <div class="card p-4 flex items-center gap-3">
               <div class="icon-circle" style="background:#FEF2E3;"><i data-lucide="clock" class="w-5 h-5" style="color:var(--amber);"></i></div>
-              <div><div class="text-[11px] text-slate-400">Jam Kerja Bulan Ini</div><div class="text-xl font-bold">168</div><div class="text-[10px] text-slate-400">Total Jam</div></div>
+              <div><div class="text-[11px] text-slate-400">Jam Kerja Bulan Ini</div><div class="text-xl font-bold" id="kpiTotalHours">-</div><div class="text-[10px] text-slate-400">Total Jam</div></div>
             </div>
             <div class="card p-4 flex items-center gap-3">
               <div class="icon-circle" style="background:#F2ECFE;"><i data-lucide="shield-check" class="w-5 h-5" style="color:var(--purple);"></i></div>
@@ -376,12 +374,17 @@ html,body{overflow-x:hidden;max-width:100%;}
                 <span id="syncBadge" class="text-[10px] text-slate-400 font-normal"></span>
               </div>
               <div class="flex items-center gap-2 flex-wrap">
-                <button class="btn btn-blue" id="btnTambahBaris"><i data-lucide="plus" class="w-3.5 h-3.5"></i>Tambah Baris</button>
-                <button class="btn btn-outline" id="btnCopyYesterday" style="color:var(--blue);"><i data-lucide="copy" class="w-3.5 h-3.5"></i>Copy Yesterday</button>
-                <button class="btn btn-outline" id="btnRepeat" style="color:var(--green);"><i data-lucide="repeat" class="w-3.5 h-3.5"></i>Repeat</button>
-                <span class="w-px h-5 bg-slate-200 mx-1"></span>
-                <button class="btn btn-outline"><i data-lucide="upload" class="w-3.5 h-3.5"></i>Import dari Excel</button>
-                <button class="btn btn-blue" id="btnExport"><i data-lucide="download" class="w-3.5 h-3.5"></i>Export Excel</button>
+                <div class="dd-wrap">
+                  <button class="btn btn-outline text-[11px]" id="btnMoreActions"><i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i>Aksi Lainnya</button>
+                  <div class="dd-menu" id="moreActionsMenu">
+                    <div class="dd-item" id="btnTambahBaris"><i data-lucide="plus"></i>Tambah Baris</div>
+                    <div class="dd-item" id="btnCopyYesterday"><i data-lucide="copy"></i>Copy Yesterday</div>
+                    <div class="dd-item" id="btnRepeat"><i data-lucide="repeat"></i>Repeat</div>
+                    <div class="dd-sep"></div>
+                    <div class="dd-item" id="btnImportExcel"><i data-lucide="upload"></i>Import dari Excel</div>
+                    <div class="dd-item" id="btnExport"><i data-lucide="download"></i>Export Excel</div>
+                  </div>
+                </div>
                 <button class="btn btn-outline" id="btnExportPDF" style="color:#DC2626;"><i data-lucide="file-text" class="w-3.5 h-3.5"></i>Export PDF</button>
               </div>
             </div>
@@ -417,12 +420,18 @@ html,body{overflow-x:hidden;max-width:100%;}
             </div>
           </div>
 
-          <!-- BOTTOM EXPLAIN STRIP -->
-          <div class="card mt-5 p-4 grid grid-cols-4 gap-4 text-xs" style="background:#FAFBFE;">
-            <div><div class="flex items-center gap-2 font-semibold mb-1"><span class="badge-num" style="background:var(--blue);">1</span>Form Input Timesheet</div><div class="text-slate-500 text-[11px]">Auto suggest Project ID, Activity, Location & Jam. Klik kolom untuk suggestion lengkap.</div></div>
-            <div><div class="flex items-center gap-2 font-semibold mb-1"><span class="badge-num" style="background:var(--purple);">2</span>Fitur Pintar</div><div class="text-slate-500 text-[11px]">Copy Yesterday, Repeat, Auto Holiday, WFH, Manual Input, dan lainnya.</div></div>
-            <div><div class="flex items-center gap-2 font-semibold mb-1"><span class="badge-num" style="background:var(--amber);">3</span>Alur Approval</div><div class="text-slate-500 text-[11px]">Draft → Submit → Project Manager → Dept Head → Division Head → Approved.</div></div>
-            <div class="rounded-xl p-3" style="background:#E7F9EE;"><div class="flex items-center gap-2 font-semibold mb-1"><i data-lucide="file-spreadsheet" class="w-4 h-4" style="color:var(--green);"></i>Sync Google Sheets</div><div class="text-slate-600 text-[11px]">Data timesheet disimpan & ditarik dari Google Sheets. Delete di sini = delete di sheet.</div></div>
+          <!-- BOTTOM EXPLAIN STRIP (collapsible, default tertutup) -->
+          <div class="card mt-5" style="background:#FAFBFE;">
+            <button id="btnToggleHelpStrip" class="flex items-center justify-between w-full p-3 text-xs font-semibold text-slate-500" style="background:none;border:none;cursor:pointer;">
+              <span class="flex items-center gap-2"><i data-lucide="help-circle" class="w-3.5 h-3.5"></i>Panduan Singkat</span>
+              <i data-lucide="chevron-down" class="w-3.5 h-3.5" id="helpStripChevron"></i>
+            </button>
+            <div id="helpStripBody" class="grid grid-cols-4 gap-4 text-xs p-4 pt-0" style="display:none;">
+              <div><div class="flex items-center gap-2 font-semibold mb-1"><span class="badge-num" style="background:var(--blue);">1</span>Form Input Timesheet</div><div class="text-slate-500 text-[11px]">Auto suggest Project ID, Activity, Location & Jam. Klik kolom untuk suggestion lengkap.</div></div>
+              <div><div class="flex items-center gap-2 font-semibold mb-1"><span class="badge-num" style="background:var(--purple);">2</span>Fitur Pintar</div><div class="text-slate-500 text-[11px]">Copy Yesterday, Repeat, Auto Holiday, WFH, Manual Input, dan lainnya — ada di "Aksi Lainnya".</div></div>
+              <div><div class="flex items-center gap-2 font-semibold mb-1"><span class="badge-num" style="background:var(--amber);">3</span>Alur Approval</div><div class="text-slate-500 text-[11px]">Draft → Submit → Project Manager → Dept Head → Division Head → Approved.</div></div>
+              <div class="rounded-xl p-3" style="background:#E7F9EE;"><div class="flex items-center gap-2 font-semibold mb-1"><i data-lucide="file-spreadsheet" class="w-4 h-4" style="color:var(--green);"></i>Sync Google Sheets</div><div class="text-slate-600 text-[11px]">Data timesheet disimpan & ditarik dari Google Sheets. Delete di sini = delete di sheet.</div></div>
+            </div>
           </div>
         </div>
 
@@ -431,14 +440,14 @@ html,body{overflow-x:hidden;max-width:100%;}
           <div class="card p-4">
             <div class="text-sm font-bold mb-2">Status Pengisian Bulan Ini</div>
             <div class="flex items-center gap-2 mb-1">
-              <div class="progress-track flex-1"><div class="h-full rounded-full" style="width:95%;background:linear-gradient(90deg,var(--green),var(--amber));"></div></div>
-              <span class="text-xs font-bold text-green-600">95%</span>
+              <div class="progress-track flex-1"><div class="h-full rounded-full" id="fillStatusBar" style="width:0%;background:linear-gradient(90deg,var(--green),var(--amber));"></div></div>
+              <span class="text-xs font-bold text-green-600" id="fillStatusPct">0%</span>
             </div>
-            <div class="text-[11px] text-slate-400 mb-3">21 dari 22 hari sudah diisi</div>
+            <div class="text-[11px] text-slate-400 mb-3" id="fillStatusSub">-</div>
             <div class="space-y-1.5 text-xs">
-              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:var(--green);"></span>Sudah Diisi<span class="ml-auto font-semibold">21</span></div>
-              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:var(--amber);"></span>Belum Diisi<span class="ml-auto font-semibold">1</span></div>
-              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-slate-300"></span>Hari Libur / Weekend<span class="ml-auto font-semibold">8</span></div>
+              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:var(--green);"></span>Sudah Diisi<span class="ml-auto font-semibold" id="fillStatusDone">-</span></div>
+              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:var(--amber);"></span>Belum Diisi<span class="ml-auto font-semibold" id="fillStatusPending">-</span></div>
+              <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-slate-300"></span>Hari Libur / Weekend<span class="ml-auto font-semibold" id="fillStatusHoliday">-</span></div>
             </div>
           </div>
 
@@ -453,14 +462,19 @@ html,body{overflow-x:hidden;max-width:100%;}
             </div>
           </div>
 
-          <div class="rounded-2xl p-4" style="background:#FEF9E7;border:1px solid #F5E6A8;">
-            <div class="flex items-center gap-2 text-sm font-bold mb-2" style="color:#92680B;"><i data-lucide="lightbulb" class="w-4 h-4"></i>Tips Cepat</div>
-            <ul class="text-[11.5px] space-y-1.5" style="color:#8A6A16;">
-              <li>• Ketik di Project ID — akan muncul suggestion dari master data</li>
-              <li>• Klik <strong>Master Data</strong> di topbar untuk lihat & cari semua project</li>
-              <li>• Delete baris → otomatis hapus dari Google Sheets</li>
-              <li>• Simpan draft sebelum submit ke atasan</li>
-            </ul>
+          <div class="rounded-2xl" style="background:#FEF9E7;border:1px solid #F5E6A8;">
+            <button id="btnToggleTips" class="flex items-center justify-between w-full p-4 text-sm font-bold" style="background:none;border:none;cursor:pointer;color:#92680B;">
+              <span class="flex items-center gap-2"><i data-lucide="lightbulb" class="w-4 h-4"></i>Tips Cepat</span>
+              <i data-lucide="chevron-down" class="w-3.5 h-3.5" id="tipsChevron"></i>
+            </button>
+            <div id="tipsBody" style="display:none;padding:0 16px 16px;">
+              <ul class="text-[11.5px] space-y-1.5" style="color:#8A6A16;">
+                <li>• Ketik di Project ID — akan muncul suggestion dari master data</li>
+                <li>• Klik avatar Anda di pojok kanan atas → <strong>Master Data</strong> untuk lihat & cari semua project</li>
+                <li>• Delete baris → otomatis hapus dari Google Sheets</li>
+                <li>• Simpan draft sebelum submit ke atasan</li>
+              </ul>
+            </div>
           </div>
 
           <div class="card p-4">
@@ -1054,6 +1068,8 @@ function initSession(user){
   document.getElementById('appMain').classList.remove('pre-login-hidden');
   document.getElementById('sidebarName').textContent  = user.fullname;
   document.getElementById('userAvatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.fullname)}`;
+  document.getElementById('topbarUserName').textContent = user.fullname;
+  document.getElementById('userAvatar2').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.fullname)}`;
 
   // FIX (bug "bocor" Admin Panel ke akun lain): reset SEMUA view & menu utama
   // ke kondisi default di awal SETIAP login — supaya sisa tampilan dari sesi
@@ -1278,8 +1294,6 @@ function applyMasterProjectData(mp){
     const key = siteId ? (row.ProjectID + ' - ' + siteId) : row.ProjectID;
     PROJECTS[key] = { name: row.ProjectName || row['Project Name'] || '', customer: row.Customer || '', phase: row.Phase || '', siteId: siteId, projectId: row.ProjectID };
   });
-  const kpiEl = document.getElementById('kpiTotalProject');
-  if(kpiEl) kpiEl.textContent = Object.keys(PROJECTS).length;
 }
 
 // Versi ringan loadFromSheets — cuma ambil Master Project, dipakai approver
@@ -1515,11 +1529,6 @@ function renderMySubmissionStatus(){
   }
 }
 
-document.getElementById('menuTimesheet').addEventListener('click',()=>{
-  const sm=document.getElementById('submenuTimesheet');
-  sm.style.display=sm.style.display==='none'?'block':'none';
-});
-
 // =========================================================
 // MOBILE SIDEBAR TOGGLE
 // =========================================================
@@ -1531,6 +1540,46 @@ document.getElementById('menuToggleBtn').addEventListener('click',()=>{
   sidebarEl.classList.contains('sidebar-open') ? closeSidebar() : openSidebar();
 });
 sidebarOverlayEl.addEventListener('click', closeSidebar);
+
+// Dropdown generik (dd-wrap/dd-menu) — dipakai buat "Aksi Lainnya" di
+// toolbar & menu avatar di topbar. Klik trigger toggle, klik di luar nutup,
+// klik item apa pun di dalam menu ikut nutup (biar gak nyangkut kebuka).
+function wireDropdown(triggerId, menuId){
+  const trigger = document.getElementById(triggerId);
+  const menu = document.getElementById(menuId);
+  if(!trigger || !menu) return;
+  trigger.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    document.querySelectorAll('.dd-menu.show').forEach(m=>{ if(m!==menu) m.classList.remove('show'); });
+    menu.classList.toggle('show');
+  });
+  menu.addEventListener('click', ()=> menu.classList.remove('show'));
+}
+document.addEventListener('click', ()=>{ document.querySelectorAll('.dd-menu.show').forEach(m=>m.classList.remove('show')); });
+wireDropdown('btnMoreActions', 'moreActionsMenu');
+wireDropdown('userMenuTrigger', 'userMenu');
+
+// Panel bantuan (Panduan Singkat & Tips Cepat) — default TERTUTUP biar
+// dashboard gak "ramai" buat user yang udah hafal, tapi kalau user pernah
+// buka manual, dibuka lagi pas reload (localStorage) — bukan cuma dev toy,
+// halaman ini di-host statis di GitHub Pages, aman pakai localStorage.
+function wireCollapsible(btnId, bodyId, chevronId, storageKey){
+  const btn = document.getElementById(btnId);
+  const body = document.getElementById(bodyId);
+  const chevron = document.getElementById(chevronId);
+  if(!btn || !body) return;
+  const setOpen = (open)=>{
+    body.style.display = open ? '' : 'none';
+    if(chevron) chevron.style.transform = open ? 'rotate(180deg)' : '';
+    try{ localStorage.setItem(storageKey, open ? '1' : '0'); }catch(e){}
+  };
+  let isOpen = false;
+  try{ isOpen = localStorage.getItem(storageKey) === '1'; }catch(e){}
+  setOpen(isOpen);
+  btn.addEventListener('click', ()=> setOpen(body.style.display === 'none'));
+}
+wireCollapsible('btnToggleHelpStrip', 'helpStripBody', 'helpStripChevron', 'tis_help_open');
+wireCollapsible('btnToggleTips', 'tipsBody', 'tipsChevron', 'tis_tips_open');
 // Auto-close sidebar after picking a menu item on mobile
 sidebarEl.querySelectorAll('.nav-item[data-view]').forEach(el=>{
   el.addEventListener('click',()=>{ if(window.innerWidth<1024) closeSidebar(); });
@@ -1589,8 +1638,6 @@ function buildEmptyRowState(period){
   return rows;
 }
 let rowState = buildEmptyRowState(CURRENT_PERIOD);
-
-document.getElementById('kpiTotalProject').textContent = Object.keys(PROJECTS).length;
 
 // =========================================================
 // SUGGEST HELPERS
@@ -1946,6 +1993,31 @@ function checkAiSuggestion(idx){
 
 function updateTotals(){
   document.getElementById('totalMandays').textContent = rowState.reduce((s,r)=>s+(r.mandays||0),0).toFixed(1);
+
+  const workDays  = rowState.filter(r=>!r.holiday);
+  const filled    = workDays.filter(r=>r.filled).length;
+  const holidays  = rowState.length - workDays.length;
+  const pct       = workDays.length ? Math.round((filled / workDays.length) * 100) : 0;
+
+  // KPI ringkas di atas (sebelumnya angka statis "21/22" & "168")
+  const totalHours = workDays.filter(r=>r.filled).reduce((s,r)=>s + (parseFloat(r.hours) || 0), 0);
+  const elDaysFilled = document.getElementById('kpiDaysFilled');
+  if(elDaysFilled){
+    elDaysFilled.textContent = filled;
+    document.getElementById('kpiDaysTotal').textContent = workDays.length;
+    document.getElementById('kpiTotalHours').textContent = totalHours ? Math.round(totalHours) : '0';
+  }
+
+  // Widget "Status Pengisian Bulan Ini" di panel kanan
+  const elPct = document.getElementById('fillStatusPct');
+  if(elPct){
+    document.getElementById('fillStatusBar').style.width = pct + '%';
+    elPct.textContent = pct + '%';
+    document.getElementById('fillStatusSub').textContent = `${filled} dari ${workDays.length} hari kerja sudah diisi`;
+    document.getElementById('fillStatusDone').textContent = filled;
+    document.getElementById('fillStatusPending').textContent = (workDays.length - filled);
+    document.getElementById('fillStatusHoliday').textContent = holidays;
+  }
 }
 
 render();
