@@ -666,7 +666,7 @@ html,body{overflow-x:hidden;max-width:100%;}
           <button id="btnCloseSignatureModal" style="background:none;border:none;cursor:pointer;"><i data-lucide="x" class="w-5 h-5 text-slate-400"></i></button>
         </div>
         <div class="modal-body">
-          <div class="text-[12px] text-slate-500 mb-3">Upload gambar tanda tangan (PNG, background transparan lebih baik). Disimpan sekali — otomatis ditempel setiap kali Anda klik Approve.</div>
+          <div class="text-[12px] text-slate-500 mb-3">Upload gambar tanda tangan (PNG, background transparan lebih baik). Gambar otomatis dikompres sebelum disimpan. Disimpan sekali — otomatis ditempel setiap kali Anda klik Approve.</div>
           <input type="file" id="signatureFileInput" accept="image/png,image/jpeg" style="font-size:12px;">
           <div id="signaturePreviewWrap" style="display:none;margin-top:12px;text-align:center;padding:12px;border:1px dashed var(--border);border-radius:10px;">
             <img id="signaturePreviewImg" style="max-height:90px;max-width:100%;">
@@ -1100,7 +1100,8 @@ function initSession(user){
     const stageLabel = {approver_pm:'Project Manager', approver_depthead:'Dept Head', approver_divhead:'Division Head'}[user.role] || '';
     document.getElementById('approvalStageDesc').textContent = `Daftar timesheet yang menunggu review Anda selaku ${stageLabel}`;
     loadPendingApprovals();
-    return; // approver tidak perlu load master project/timesheet consultant
+    loadMasterProjectOnly(); // supaya Project Name/Phase/Customer kebaca di modal Review & PDF
+    return; // approver tetap gak perlu load master activity/location/timesheet consultant
   }
   if(user.role === 'admin'){
     document.getElementById('navAdminMenu').style.display = '';
@@ -1261,6 +1262,38 @@ document.getElementById('btnConnectSheet').addEventListener('click', async ()=>{
 
 document.getElementById('btnRefreshSheet').addEventListener('click', ()=>loadFromSheets());
 
+// Isi ulang cache PROJECTS dari hasil getMasterProject. Dipisah dari
+// loadFromSheets supaya bisa dipanggil sendiri (tanpa ikut load timesheet
+// consultant/master activity/location) buat role yang cuma butuh nama
+// project/phase/customer buat DITAMPILKAN, bukan buat isi timesheet
+// (approver & admin) — soalnya PROJECTS dipakai juga waktu render tabel
+// Review & PDF, bukan cuma di halaman Input Timesheet.
+function applyMasterProjectData(mp){
+  if(!Array.isArray(mp) || !mp.length) return;
+  Object.keys(PROJECTS).forEach(k=>delete PROJECTS[k]);
+  if(mp[0]) console.log('[MasterProject] Kolom dari Sheets:', Object.keys(mp[0]));
+  mp.forEach(row=>{
+    if(!row.ProjectID) return;
+    const siteId = row.SiteID || row['Site ID'] || row.SiteId || row.site_id || row.SITEID || row['Site_ID'] || row.SiteCode || row.siteid || '';
+    const key = siteId ? (row.ProjectID + ' - ' + siteId) : row.ProjectID;
+    PROJECTS[key] = { name: row.ProjectName || row['Project Name'] || '', customer: row.Customer || '', phase: row.Phase || '', siteId: siteId, projectId: row.ProjectID };
+  });
+  const kpiEl = document.getElementById('kpiTotalProject');
+  if(kpiEl) kpiEl.textContent = Object.keys(PROJECTS).length;
+}
+
+// Versi ringan loadFromSheets — cuma ambil Master Project, dipakai approver
+// (yang gak isi timesheet sendiri jadi gak perlu master activity/location/
+// timesheet consultant) supaya Project Name/Phase/Customer tetap kebaca
+// waktu review & export PDF.
+async function loadMasterProjectOnly(){
+  if(!APPS_SCRIPT_URL) return;
+  try{
+    const mp = await fetch(`${APPS_SCRIPT_URL}?action=getMasterProject`).then(r=>r.json());
+    applyMasterProjectData(mp);
+  }catch(e){ console.error('Gagal memuat Master Project untuk approver:', e); }
+}
+
 async function loadFromSheets(){
   if(!APPS_SCRIPT_URL) return;
   const statusEl = document.getElementById('connStatus');
@@ -1277,17 +1310,7 @@ async function loadFromSheets(){
     const ts = await fetch(`${APPS_SCRIPT_URL}?action=getTimesheet&consultant=${encodeURIComponent(CONSULTANT_NAME)}&startDate=${CURRENT_PERIOD.start}&endDate=${CURRENT_PERIOD.end}`).then(r=>r.json());
     setLoadingProgress(85, 'Menyinkronkan data...');
 
-    if(Array.isArray(mp) && mp.length){
-      Object.keys(PROJECTS).forEach(k=>delete PROJECTS[k]);
-      if(mp[0]) console.log('[MasterProject] Kolom dari Sheets:', Object.keys(mp[0]));
-      mp.forEach(row=>{
-        if(!row.ProjectID) return;
-        const siteId = row.SiteID || row['Site ID'] || row.SiteId || row.site_id || row.SITEID || row['Site_ID'] || row.SiteCode || row.siteid || '';
-        const key = siteId ? (row.ProjectID + ' - ' + siteId) : row.ProjectID;
-        PROJECTS[key] = { name: row.ProjectName || row['Project Name'] || '', customer: row.Customer || '', phase: row.Phase || '', siteId: siteId, projectId: row.ProjectID };
-      });
-      document.getElementById('kpiTotalProject').textContent = Object.keys(PROJECTS).length;
-    }
+    applyMasterProjectData(mp);
     if(Array.isArray(ma) && ma.length){ ACTIVITIES.length=0; ma.forEach(row=>{if(row.Activity)ACTIVITIES.push(row.Activity);}); }
     if(Array.isArray(ml) && ml.length){ LOCATIONS.length=0; ml.forEach(row=>{if(row.Location)LOCATIONS.push(row.Location);}); }
     if(Array.isArray(ts)) applySheetTimesheet(ts);
@@ -3265,6 +3288,43 @@ document.getElementById('btnRejectSubmission').addEventListener('click', async (
 });
 
 // ── Upload tanda tangan (PNG, sekali per approver) ──
+// Kompres gambar tanda tangan pakai canvas sebelum dijadikan base64. WAJIB —
+// Google Sheets punya batas 50.000 karakter per SEL, dan foto/scan tanda
+// tangan mentah (apalagi dari HP) gampang banget menghasilkan base64 jutaan
+// karakter, yang bikin Apps Script gagal nulis ke sel & browser gagal parse
+// respons-nya (kelihatan sebagai "Gagal menyimpan. Cek koneksi." padahal
+// bukan soal koneksi). Turunkan resolusi bertahap sampai base64-nya aman.
+function compressSignatureImage(file, maxChars){
+  maxChars = maxChars || 45000;
+  return new Promise((resolve, reject)=>{
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{
+      URL.revokeObjectURL(url);
+      const renderAt = (maxDim)=>{
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        return canvas.toDataURL('image/png');
+      };
+      const steps = [600, 450, 350, 260, 190, 140, 100, 70];
+      let result = null;
+      for(const dim of steps){
+        const candidate = renderAt(dim);
+        if(candidate.length <= maxChars){ result = candidate; break; }
+      }
+      resolve(result || renderAt(50));
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); reject(new Error('File gambar tidak bisa dibaca.')); };
+    img.src = url;
+  });
+}
+
 let SIGNATURE_BASE64 = '';
 function openSignatureModal(){
   document.getElementById('signatureFileInput').value = '';
@@ -3281,19 +3341,29 @@ document.getElementById('btnOpenSignatureModalGlobal').addEventListener('click',
 document.getElementById('btnCloseSignatureModal').addEventListener('click', closeSignatureModal);
 document.getElementById('btnCloseSignatureModal2').addEventListener('click', closeSignatureModal);
 
-document.getElementById('signatureFileInput').addEventListener('change', (e)=>{
+document.getElementById('signatureFileInput').addEventListener('change', async (e)=>{
   const file = e.target.files[0];
   const errEl = document.getElementById('signatureError');
   errEl.textContent = '';
   if(!file) return;
-  if(file.size > 1.5*1024*1024){ errEl.textContent = 'Ukuran file maksimal 1.5MB.'; e.target.value=''; return; }
-  const reader = new FileReader();
-  reader.onload = ()=>{
-    SIGNATURE_BASE64 = reader.result;
+  if(file.size > 5*1024*1024){ errEl.textContent = 'Ukuran file maksimal 5MB.'; e.target.value=''; return; }
+  errEl.textContent = 'Memproses gambar...';
+  errEl.style.color = '';
+  try{
+    const compressed = await compressSignatureImage(file);
+    if(!compressed || compressed.length > 48000){
+      errEl.textContent = 'Gambar masih terlalu besar/rumit setelah dikompres. Coba tanda tangan yang lebih simpel atau gambar dengan background lebih polos/transparan.';
+      document.getElementById('signaturePreviewWrap').style.display = 'none';
+      SIGNATURE_BASE64 = '';
+      return;
+    }
+    SIGNATURE_BASE64 = compressed;
+    errEl.textContent = '';
     document.getElementById('signaturePreviewImg').src = SIGNATURE_BASE64;
     document.getElementById('signaturePreviewWrap').style.display = '';
-  };
-  reader.readAsDataURL(file);
+  }catch(err){
+    errEl.textContent = 'Gagal memproses gambar: ' + err.message;
+  }
 });
 
 document.getElementById('btnSaveSignature').addEventListener('click', async ()=>{
@@ -3318,7 +3388,7 @@ document.getElementById('btnSaveSignature').addEventListener('click', async ()=>
       showToast('Tanda tangan berhasil disimpan.','ok');
       closeSignatureModal();
     }
-  }catch(e){ errEl.textContent = 'Gagal menyimpan. Cek koneksi.'; }
+  }catch(e){ errEl.textContent = 'Gagal menyimpan (' + (e.message || 'error tidak diketahui') + '). Coba lagi atau pakai gambar tanda tangan yang lebih sederhana.'; }
   btn.classList.remove('btn-loading'); btn.disabled = false;
 });
 </script>
