@@ -3173,15 +3173,22 @@ async function openApprovalDetail(submissionId, readonly){
       statusPill.innerHTML = statusPillHTML(detail.Status) + (detail.Status==='Rejected' && detail.RejectReason ? ` <span class="text-[11px] text-slate-400">— alasan: "${detail.RejectReason}"</span>` : '');
     }
     const rows = detail.timesheetRows || [];
-    document.getElementById('approvalDetailTBody').innerHTML = rows.length ? rows.map(r=>`
+    // Baris "Hari Libur" (weekend) kadang punya nilai Mandays lama tersisa di
+    // sheet (mis. dari sebelum ditandai libur) — paksa tampil '-' untuk baris
+    // itu di modal Review, jangan ikut nilai mentahnya, supaya tidak keliatan
+    // seolah hari libur dihitung mandays.
+    document.getElementById('approvalDetailTBody').innerHTML = rows.length ? rows.map(r=>{
+      const isHoliday = r.Activity === 'Hari Libur';
+      return `
       <tr>
         <td>${r.Date||'-'}</td>
         <td>${r.ProjectName||'-'}</td>
         <td>${r.Activity||'-'}</td>
         <td>${r.Location||'-'}</td>
         <td>${r.Hours||'-'}</td>
-        <td>${r.Mandays||'-'}</td>
-      </tr>`).join('') : `<tr><td colspan="6" class="text-center text-slate-400 py-6">Tidak ada baris timesheet.</td></tr>`;
+        <td>${isHoliday ? '-' : (r.Mandays||'-')}</td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="6" class="text-center text-slate-400 py-6">Tidak ada baris timesheet.</td></tr>`;
 
     // Histori approval sejauh ini
     let hist = '';
