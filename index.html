@@ -224,8 +224,8 @@ html,body{overflow-x:hidden;max-width:100%;}
   <div class="login-box">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
       
-      <!-- GANTI src DI BAWAH INI DENGAN URL LOGO ANDA (misal: "assets/logo.png") -->
-      <img src="https://placehold.co/84x84/F59E0B/FFF?text=Logo" alt="Logo Integra" style="width:42px;height:42px;object-fit:contain;border-radius:8px;">
+      <!-- Logo: logo.png (satu folder dengan index.html di repo) -->
+      <img src="logo.png" alt="Logo Integra" style="width:42px;height:42px;object-fit:contain;border-radius:8px;">
       
       <div>
         <div style="font-weight:800;font-size:16px;color:#0E1730;">INTEGRA SOLUSI MANDIRI</div>
@@ -246,8 +246,8 @@ html,body{overflow-x:hidden;max-width:100%;}
 <div id="loadingScreen" style="display:none;position:fixed;inset:0;z-index:9998;background:linear-gradient(135deg,#0E1730 0%,#1a2a5e 100%);flex-direction:column;align-items:center;justify-content:center;">
   <div style="text-align:center;">
     
-    <!-- GANTI src DI BAWAH INI DENGAN URL LOGO ANDA -->
-    <img src="https://placehold.co/112x112/F59E0B/FFF?text=Logo" alt="Logo Integra" style="width:56px;height:56px;object-fit:contain;margin:0 auto 20px;">
+    <!-- Logo: logo.png (satu folder dengan index.html di repo) -->
+    <img src="logo.png" alt="Logo Integra" style="width:56px;height:56px;object-fit:contain;margin:0 auto 20px;">
     
     <div style="color:#fff;font-size:16px;font-weight:700;margin-bottom:6px;">Memuat Dashboard...</div>
     <div style="color:#8A93A6;font-size:12px;margin-bottom:28px;" id="loadingMsg">Menghubungkan ke Google Sheets</div>
@@ -263,8 +263,8 @@ html,body{overflow-x:hidden;max-width:100%;}
     <div>
       <div class="flex items-center gap-2 px-1 mb-6">
         
-        <!-- GANTI src DI BAWAH INI DENGAN URL LOGO ANDA -->
-        <img src="https://placehold.co/64x64/F59E0B/FFF?text=Logo" alt="Logo" class="w-8 h-8 object-contain rounded-md"/>
+        <!-- Logo: logo.png (satu folder dengan index.html di repo) -->
+        <img src="logo.png" alt="Logo" class="w-8 h-8 object-contain rounded-md"/>
         
         <div>
           <div class="font-bold text-sm text-white leading-none">INTEGRA</div>
@@ -272,7 +272,7 @@ html,body{overflow-x:hidden;max-width:100%;}
         </div>
       </div>
       <div class="flex items-center gap-2 px-2 py-3 rounded-xl mb-5" style="background:#1B2547;">
-        <img id="userAvatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=User" class="w-9 h-9 rounded-full bg-white"/>
+        <img id="userAvatar" src="https://api.dicebear.com/7.x/initials/svg?seed=User&amp;backgroundType=solid" class="w-9 h-9 rounded-full bg-white"/>
         <div class="text-xs flex-1 min-w-0">
           <div class="font-semibold text-white truncate" id="sidebarName">-</div>
           <div class="text-slate-400" id="sidebarRole">-</div>
@@ -312,7 +312,7 @@ html,body{overflow-x:hidden;max-width:100%;}
         <button id="btnConnectSheet" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold" style="background:#FEF2E3;color:#92680B;border:1px solid #F5E6A8;" title="Status koneksi Google Sheets"><i data-lucide="plug-zap" class="w-3.5 h-3.5"></i><span id="connStatus">Sambungkan</span></button>
         <div class="dd-wrap">
           <button id="userMenuTrigger" class="flex items-center gap-2" style="background:none;border:none;cursor:pointer;padding:2px;">
-            <img id="userAvatar2" src="https://api.dicebear.com/7.x/avataaars/svg?seed=User" class="w-8 h-8 rounded-full"/>
+            <img id="userAvatar2" src="https://api.dicebear.com/7.x/initials/svg?seed=User&amp;backgroundType=solid" class="w-8 h-8 rounded-full"/>
             <span class="text-xs font-semibold" id="topbarUserName">-</span>
             <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
           </button>
@@ -755,8 +755,8 @@ html,body{overflow-x:hidden;max-width:100%;}
         <div style="text-align:right;padding-top:4px;">
           <div style="display:inline-flex;align-items:center;gap:8px;">
             
-            <!-- GANTI src DI BAWAH INI DENGAN URL LOGO ANDA -->
-            <img src="https://placehold.co/68x68/F59E0B/FFF?text=Logo" alt="Logo" style="width:34px;height:34px;object-fit:contain;">
+            <!-- Logo: logo.png (satu folder dengan index.html di repo) -->
+            <img src="logo.png" alt="Logo" style="width:34px;height:34px;object-fit:contain;">
             
             <div style="text-align:left;">
               <div style="font-weight:800;font-size:15px;color:#0E1730;line-height:1;">INTEGRA</div>
@@ -1067,9 +1067,9 @@ function initSession(user){
   document.getElementById('sidebar').classList.remove('pre-login-hidden');
   document.getElementById('appMain').classList.remove('pre-login-hidden');
   document.getElementById('sidebarName').textContent  = user.fullname;
-  document.getElementById('userAvatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.fullname)}`;
+  document.getElementById('userAvatar').src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.fullname)}&backgroundType=solid`;
   document.getElementById('topbarUserName').textContent = user.fullname;
-  document.getElementById('userAvatar2').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.fullname)}`;
+  document.getElementById('userAvatar2').src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.fullname)}&backgroundType=solid`;
 
   // FIX (bug "bocor" Admin Panel ke akun lain): reset SEMUA view & menu utama
   // ke kondisi default di awal SETIAP login — supaya sisa tampilan dari sesi
