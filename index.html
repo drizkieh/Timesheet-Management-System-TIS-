@@ -3172,21 +3172,24 @@ async function openApprovalDetail(submissionId, readonly){
       statusPill.style.display = '';
       statusPill.innerHTML = statusPillHTML(detail.Status) + (detail.Status==='Rejected' && detail.RejectReason ? ` <span class="text-[11px] text-slate-400">— alasan: "${detail.RejectReason}"</span>` : '');
     }
-    const rows = detail.timesheetRows || [];
-    // Baris "Hari Libur" (weekend) kadang punya nilai Mandays lama tersisa di
-    // sheet (mis. dari sebelum ditandai libur) — paksa tampil '-' untuk baris
-    // itu di modal Review, jangan ikut nilai mentahnya, supaya tidak keliatan
-    // seolah hari libur dihitung mandays.
-    document.getElementById('approvalDetailTBody').innerHTML = rows.length ? rows.map(r=>{
-      const isHoliday = r.Activity === 'Hari Libur';
+    // Rekonstruksi baris per-hari dari periode penuh (bukan langsung raw
+    // timesheetRows dari sheet) — soalnya raw rows urutannya ikut urutan
+    // input di sheet (bisa acak), bukan urut tanggal. buildDayRowsFromEntries
+    // yang sama dipakai buat PDF: hasilnya udah pasti urut tanggal 1 periode
+    // penuh, dan baris Hari Libur konsisten (gak ikut nilai Mandays mentah
+    // yang mungkin nyangkut di sheet).
+    const period = { start: detail.PeriodStart, end: detail.PeriodEnd };
+    const dayRows = buildDayRowsFromEntries(period, detail.timesheetRows || []);
+    document.getElementById('approvalDetailTBody').innerHTML = dayRows.length ? dayRows.map(r=>{
+      const p = r.pid ? (PROJECTS[r.pid]||{}) : {};
       return `
       <tr>
-        <td>${r.Date||'-'}</td>
-        <td>${r.ProjectName||'-'}</td>
-        <td>${r.Activity||'-'}</td>
-        <td>${r.Location||'-'}</td>
-        <td>${r.Hours||'-'}</td>
-        <td>${isHoliday ? '-' : (r.Mandays||'-')}</td>
+        <td>${r.date||'-'}</td>
+        <td>${r.holiday ? '-' : ((p.name&&p.name!=='-') ? p.name : '-')}</td>
+        <td>${r.holiday ? 'Hari Libur' : (r.activity||'-')}</td>
+        <td>${r.holiday ? '-' : (r.location||'-')}</td>
+        <td>${r.holiday ? '-' : (r.hours||'-')}</td>
+        <td>${r.holiday ? '-' : (r.mandays||'-')}</td>
       </tr>`;
     }).join('') : `<tr><td colspan="6" class="text-center text-slate-400 py-6">Tidak ada baris timesheet.</td></tr>`;
 
