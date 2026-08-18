@@ -1516,24 +1516,25 @@ async function handleSupabaseRequest(url, options) {
       }
       case 'getPendingApprovals': {
         let qPending = supabaseClient.from('submissions').select('*');
-        if (params.role === 'pm') {
+        const role = (params.role || '').toLowerCase();
+        if (role === 'pm' || role === 'approver_pm') {
           const { data: pmUserData } = await supabaseClient.from('users').select('project').eq('username', params.username).maybeSingle();
           const pmProject = pmUserData ? pmUserData.project : '';
-          qPending = qPending.eq('project', pmProject);
+          if (pmProject) qPending = qPending.eq('project', pmProject);
           if (params.mode === 'pending') {
             qPending = qPending.eq('status', 'Submitted');
           } else {
-            qPending = qPending.in('status', ['PM_Approved', 'DeptHead_Approved', 'Approved', 'Rejected']);
+            qPending = qPending.in('status', ['Approved_PM', 'PM_Approved', 'Approved_DeptHead', 'DeptHead_Approved', 'Approved', 'Rejected']);
           }
-        } else if (params.role === 'depthead') {
+        } else if (role === 'depthead' || role === 'approver_depthead') {
           if (params.mode === 'pending') {
-            qPending = qPending.eq('status', 'PM_Approved');
+            qPending = qPending.in('status', ['Approved_PM', 'PM_Approved']);
           } else {
-            qPending = qPending.in('status', ['DeptHead_Approved', 'Approved', 'Rejected']);
+            qPending = qPending.in('status', ['Approved_DeptHead', 'DeptHead_Approved', 'Approved', 'Rejected']);
           }
-        } else if (params.role === 'divhead') {
+        } else if (role === 'divhead' || role === 'approver_divhead') {
           if (params.mode === 'pending') {
-            qPending = qPending.eq('status', 'DeptHead_Approved');
+            qPending = qPending.in('status', ['Approved_DeptHead', 'DeptHead_Approved']);
           } else {
             qPending = qPending.in('status', ['Approved', 'Rejected']);
           }
@@ -1545,7 +1546,7 @@ async function handleSupabaseRequest(url, options) {
           Project: row.project,
           PeriodStart: row.period_start,
           PeriodEnd: row.period_end,
-          Status: row.status,
+          Status: (row.status === 'PM_Approved' ? 'Approved_PM' : (row.status === 'DeptHead_Approved' ? 'Approved_DeptHead' : row.status)),
           SubmittedAt: row.submitted_at,
           Consultant_Signature: row.consultant_signature,
           PM_Name: row.pm_name,
@@ -1572,19 +1573,20 @@ async function handleSupabaseRequest(url, options) {
 
         const updateData = {};
         let nextStatus = '';
-        if (params.role === 'pm') {
-          updateData.status = 'PM_Approved';
+        const role = (params.role || '').toLowerCase();
+        if (role === 'pm' || role === 'approver_pm') {
+          updateData.status = 'Approved_PM';
           updateData.pm_name = name;
           updateData.pm_timestamp = now;
           updateData.pm_signature = signature;
-          nextStatus = 'PM_Approved';
-        } else if (params.role === 'depthead') {
-          updateData.status = 'DeptHead_Approved';
+          nextStatus = 'Approved_PM';
+        } else if (role === 'depthead' || role === 'approver_depthead') {
+          updateData.status = 'Approved_DeptHead';
           updateData.depthead_name = name;
           updateData.depthead_timestamp = now;
           updateData.depthead_signature = signature;
-          nextStatus = 'DeptHead_Approved';
-        } else if (params.role === 'divhead') {
+          nextStatus = 'Approved_DeptHead';
+        } else if (role === 'divhead' || role === 'approver_divhead') {
           updateData.status = 'Approved';
           updateData.divhead_name = name;
           updateData.divhead_timestamp = now;
@@ -1599,9 +1601,7 @@ async function handleSupabaseRequest(url, options) {
           if (sub) {
             await supabaseClient.from('timesheet')
               .update({ status: 'Approved' })
-              .eq('consultant', sub.consultant)
-              .gte('date', sub.period_start)
-              .lte('date', sub.period_end);
+              .ilike('consultant', sub.consultant || '%');
           }
         }
         result = { success: true };
@@ -1618,9 +1618,7 @@ async function handleSupabaseRequest(url, options) {
 
           await supabaseClient.from('timesheet')
             .update({ status: 'Draft' })
-            .eq('consultant', sub.consultant)
-            .gte('date', sub.period_start)
-            .lte('date', sub.period_end);
+            .ilike('consultant', sub.consultant || '%');
         }
         result = { success: true };
         break;
@@ -1829,9 +1827,20 @@ function updateInfoCard(){
 function logout(){
   clearSession();
   CURRENT_USER = null; CONSULTANT_NAME = '';
-  document.getElementById('loginPage').classList.remove('hidden');
-  document.getElementById('sidebar').classList.add('pre-login-hidden');
-  document.getElementById('appMain').classList.add('pre-login-hidden');
+  const loginPage = document.getElementById('loginPage');
+  if(loginPage){
+    loginPage.classList.remove('hidden');
+    loginPage.style.display = 'flex';
+  }
+  const publicView = document.getElementById('publicMasterView');
+  if(publicView){
+    publicView.style.display = 'none';
+  }
+  window.location.hash = '';
+  const sidebar = document.getElementById('sidebar');
+  if(sidebar){ sidebar.classList.add('pre-login-hidden'); }
+  const appMain = document.getElementById('appMain');
+  if(appMain){ appMain.classList.add('pre-login-hidden'); }
   document.getElementById('loginUsername').value = '';
   document.getElementById('loginPassword').value = '';
   document.getElementById('loginError').textContent = '';
