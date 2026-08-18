@@ -2277,14 +2277,8 @@ sidebarEl.querySelectorAll('.nav-item[data-view]').forEach(el=>{
 // =========================================================
 // MASTER DATA
 // =========================================================
-const PROJECTS = {
-  "T01AMS41426 - BAR039": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation", siteId:"BAR039"},
-  "T01AMS41426 - BAR047": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation", siteId:"BAR047"},
-  "T01AMS41426 - BAR049": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation", siteId:"BAR049"},
-  "T01AMS41426 - BAO232": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation", siteId:"BAO232"},
-  "T01AMS41426 - GTO161": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation", siteId:"GTO161"},
-  "T01AMS41426 - KDI270": {name:"Telkominfra", customer:"Telkom Infra", phase:"Implementation", siteId:"KDI270"},
-};
+const PROJECTS = {};
+let IS_MASTER_PROJECT_LOADED = false;
 const ACTIVITIES = [
   "Monitoring Progress, collect data supply BAUT, submit PRIMA, communicate with FICO",
   "Review BAUT","Review BAPP","Review BAST","Invoice","Vendor Registration","Meeting","Training"
@@ -4279,16 +4273,17 @@ async function loadPublicMasterData(forceRefresh = false) {
   if (loadingEl) loadingEl.style.display = 'inline-flex';
 
   try {
-    if (Object.keys(PROJECTS).length === 0 || forceRefresh) {
+    if (!IS_MASTER_PROJECT_LOADED || Object.keys(PROJECTS).length === 0 || forceRefresh) {
       const mp = await fetch(`${APPS_SCRIPT_URL}?action=getMasterProject`).then(r => r.json());
       applyMasterProjectData(mp);
+      IS_MASTER_PROJECT_LOADED = true;
     }
-    renderPublicMasterTable();
+    renderPublicMasterTable(true);
   } catch (e) {
     console.error(e);
     const tbody = document.getElementById('publicMasterTBody');
     if (tbody) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:40px; color:#DC2626; font-weight:600;">⚠ Gagal memuat data dari Google Sheets. Coba klik 'Refresh Data' di atas.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:40px; color:#DC2626; font-weight:600;">⚠ Gagal memuat data dari database. Coba klik 'Refresh' di atas.</td></tr>`;
     }
   } finally {
     if (loadingEl) loadingEl.style.display = 'none';
