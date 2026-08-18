@@ -377,9 +377,8 @@ html,body{overflow-x:hidden;max-width:100%;}
                 <div class="dd-wrap">
                   <button class="btn btn-outline text-[11px]" id="btnMoreActions"><i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i>Aksi Lainnya</button>
                   <div class="dd-menu" id="moreActionsMenu">
-                    <div class="dd-item" id="btnTambahBaris"><i data-lucide="plus"></i>Tambah Baris</div>
-                    <div class="dd-item" id="btnCopyYesterday"><i data-lucide="copy"></i>Copy Yesterday</div>
-                    <div class="dd-item" id="btnRepeat"><i data-lucide="repeat"></i>Repeat</div>
+                    <div class="dd-item" id="btnCopyYesterday"><i data-lucide="copy"></i>Salin ke Hari Berikutnya (Copy)</div>
+                    <div class="dd-item" id="btnRepeat"><i data-lucide="repeat"></i>Ulangi untuk Beberapa Hari (Repeat)</div>
                     <div class="dd-sep"></div>
                     <div class="dd-item" id="btnImportExcel"><i data-lucide="upload"></i>Import dari Excel</div>
                     <div class="dd-item" id="btnExport"><i data-lucide="download"></i>Export Excel</div>
@@ -2062,32 +2061,6 @@ renderHistoryChips();
 // =========================================================
 // TOOLBAR ACTIONS
 // =========================================================
-document.getElementById('btnTambahBaris').addEventListener('click',()=>{
-  let baseDate = CURRENT_PERIOD.start;
-  let baseDay = 'Senin';
-  if(activeRowIdx !== null && rowState[activeRowIdx]){
-    baseDate = rowState[activeRowIdx].date;
-    baseDay = rowState[activeRowIdx].day;
-  } else if(rowState.length > 0){
-    const last = rowState[rowState.length-1];
-    baseDate = last.date;
-    baseDay = last.day;
-  }
-  rowState.push({
-    date: baseDate,
-    day: baseDay,
-    pid: null,
-    activity: null,
-    location: 'The Prasada',
-    hours: '08:30 - 17:30',
-    mandays: 1.0,
-    holiday: false,
-    filled: false,
-    sheetRowId: null
-  });
-  render();
-  showToast(`Baris baru ditambahkan untuk tanggal ${baseDate}`,'info');
-});
 document.getElementById('btnCopyYesterday').addEventListener('click',()=>{
   const lastFilled=[...rowState].reverse().find(r=>r.filled&&!r.holiday);
   const target=rowState.find(r=>!r.filled&&!r.holiday);
