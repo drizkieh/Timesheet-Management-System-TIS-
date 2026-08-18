@@ -380,11 +380,18 @@ html,body{overflow-x:hidden;max-width:100%;}
                     <div class="dd-item" id="btnCopyYesterday"><i data-lucide="copy"></i>Salin ke Hari Berikutnya (Copy)</div>
                     <div class="dd-item" id="btnRepeat"><i data-lucide="repeat"></i>Ulangi untuk Beberapa Hari (Repeat)</div>
                     <div class="dd-sep"></div>
+                    <div class="dd-item" id="btnExportPDFBlank2" style="color:#2563EB;"><i data-lucide="file-edit" style="color:#2563EB;"></i>Export PDF Polos (TTD Manual)</div>
                     <div class="dd-item" id="btnImportExcel"><i data-lucide="upload"></i>Import dari Excel</div>
                     <div class="dd-item" id="btnExport"><i data-lucide="download"></i>Export Excel</div>
                   </div>
                 </div>
-                <button class="btn btn-outline" id="btnExportPDF" style="color:#DC2626;"><i data-lucide="file-text" class="w-3.5 h-3.5"></i>Export PDF</button>
+                <div class="dd-wrap">
+                  <button class="btn btn-outline" id="btnExportPdfMenu" style="color:#DC2626;"><i data-lucide="file-text" class="w-3.5 h-3.5"></i>Export PDF <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i></button>
+                  <div class="dd-menu" id="exportPdfMenu">
+                    <div class="dd-item" id="btnExportPDFDigital" style="color:#DC2626;"><i data-lucide="file-check" style="color:#DC2626;"></i>PDF Digital (Lengkap TTD)</div>
+                    <div class="dd-item" id="btnExportPDFBlank" style="color:#2563EB;"><i data-lucide="file-edit" style="color:#2563EB;"></i>PDF Polos (Untuk TTD Manual)</div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1556,6 +1563,7 @@ function wireDropdown(triggerId, menuId){
 }
 document.addEventListener('click', ()=>{ document.querySelectorAll('.dd-menu.show').forEach(m=>m.classList.remove('show')); });
 wireDropdown('btnMoreActions', 'moreActionsMenu');
+wireDropdown('btnExportPdfMenu', 'exportPdfMenu');
 wireDropdown('userMenuTrigger', 'userMenu');
 
 // Panel bantuan (Panduan Singkat & Tips Cepat) — default TERTUTUP biar
@@ -2438,7 +2446,7 @@ function parseSheetDateKey(str){
   const d = new Date(str);
   return isNaN(d.getTime()) ? null : d;
 }
-function renderPrintDocument({consultant, position, project, customer, monthYearLabel, year, month, rows, approval}){
+function renderPrintDocument({consultant, position, project, customer, monthYearLabel, year, month, rows, approval, isManualSign=false}){
   document.getElementById('pvConsultant').textContent = consultant || '-';
   document.getElementById('pvPosition').textContent    = position || '-';
   document.getElementById('pvProject').textContent     = project || '-';
@@ -2446,31 +2454,37 @@ function renderPrintDocument({consultant, position, project, customer, monthYear
 
   const revNote = document.getElementById('pvRevisionNote');
   const revCount = approval && Number(approval.RevisionCount);
-  if(revCount){
+  if(revCount && !isManualSign){
     revNote.textContent = `⚠ Direvisi ${revCount}x setelah approval awal — terakhir: ${formatTimestampShort(approval.LastRevisedAt)}${approval.LastRevisionReason ? (' — alasan: "'+approval.LastRevisionReason+'"') : ''} — sudah di-approve ulang penuh dari PM.`;
     revNote.style.display = 'block';
   } else {
     revNote.style.display = 'none';
   }
 
-  // Consultant tanda tangan sendiri (upload sekali, dipakai otomatis) +
-  // timestamp submit/submit-ulang terakhir.
-  fillSignatureSlot('Consultant', consultant, approval && approval.SubmittedAt, approval && approval.Consultant_Signature);
-  fillSignatureSlot('PM',       approval && approval.PM_Name,       approval && approval.PM_Timestamp,       approval && approval.PM_Signature);
-  fillSignatureSlot('DeptHead', approval && approval.DeptHead_Name, approval && approval.DeptHead_Timestamp, approval && approval.DeptHead_Signature);
-  fillSignatureSlot('DivHead',  approval && approval.DivHead_Name,  approval && approval.DivHead_Timestamp,  approval && approval.DivHead_Signature);
-  renderApprovalHistoryBlock(approval && approval.ApprovalHistory);
-
-  // Watermark kalau periode ini belum Approved penuh (masih Draft/Submitted/
-  // proses approval/Rejected) — tetap boleh diekspor untuk preview, tapi
-  // ditandai jelas supaya gak dianggap dokumen final.
-  const wm = document.getElementById('pvWatermark');
-  const status = approval && approval.Status;
-  if(status === 'Approved'){
-    wm.style.display = 'none';
+  if(isManualSign){
+    // Mode TTD Manual (Polos): Bersih tanpa gambar digital, tanpa timestamp, tanpa riwayat approval, tanpa watermark DRAFT
+    fillSignatureSlot('Consultant', consultant, null, null);
+    fillSignatureSlot('PM',       (approval && approval.PM_Name) || '',       null, null);
+    fillSignatureSlot('DeptHead', (approval && approval.DeptHead_Name) || '', null, null);
+    fillSignatureSlot('DivHead',  (approval && approval.DivHead_Name) || '',  null, null);
+    renderApprovalHistoryBlock([]);
+    document.getElementById('pvWatermark').style.display = 'none';
   } else {
-    wm.textContent = status ? 'BELUM FINAL — ' + statusLabelPlain(status) : 'BELUM FINAL — DRAFT';
-    wm.style.display = 'block';
+    // Mode Digital: Tampilkan TTD digital asli & timestamp approval
+    fillSignatureSlot('Consultant', consultant, approval && approval.SubmittedAt, approval && approval.Consultant_Signature);
+    fillSignatureSlot('PM',       approval && approval.PM_Name,       approval && approval.PM_Timestamp,       approval && approval.PM_Signature);
+    fillSignatureSlot('DeptHead', approval && approval.DeptHead_Name, approval && approval.DeptHead_Timestamp, approval && approval.DeptHead_Signature);
+    fillSignatureSlot('DivHead',  approval && approval.DivHead_Name,  approval && approval.DivHead_Timestamp,  approval && approval.DivHead_Signature);
+    renderApprovalHistoryBlock(approval && approval.ApprovalHistory);
+
+    const wm = document.getElementById('pvWatermark');
+    const status = approval && approval.Status;
+    if(status === 'Approved'){
+      wm.style.display = 'none';
+    } else {
+      wm.textContent = status ? 'BELUM FINAL — ' + statusLabelPlain(status) : 'BELUM FINAL — DRAFT';
+      wm.style.display = 'block';
+    }
   }
 
   const tbody = document.getElementById('pvTbody');
@@ -2536,7 +2550,7 @@ function findSubmissionForPeriod(list, period){
 // consultant (riwayat periode sendiri), admin (per approval), dan approver
 // (dari modal review). Ambil data lengkap+ttd asli lewat getSubmissionDetail,
 // susun baris harian, render, lalu print.
-async function printSubmission(submissionId){
+async function printSubmission(submissionId, isManualSign=false){
   if(!APPS_SCRIPT_URL || !submissionId) return;
   showPdfLoading();
   try{
@@ -2555,7 +2569,8 @@ async function printSubmission(submissionId){
       monthYearLabel: periodLabel(period),
       year: y, month: m,
       rows: rows,
-      approval: detail
+      approval: detail,
+      isManualSign: isManualSign
     });
     triggerPvPrint();
   }catch(err){
@@ -2623,9 +2638,9 @@ document.getElementById('btnModalRevisiConfirm').addEventListener('click', async
     errEl.textContent = 'Gagal memproses revisi. Cek koneksi.';
   }
   btn.classList.remove('btn-loading'); btn.disabled = false;
-});
+  });
 
-function buildPrintTimesheetView(){
+function buildPrintTimesheetView(isManualSign=false){
   const [sy,sm] = CURRENT_PERIOD.start.split('-').map(Number);
   renderPrintDocument({
     consultant: (CURRENT_USER && CURRENT_USER.fullname) || CONSULTANT_NAME || '-',
@@ -2635,21 +2650,31 @@ function buildPrintTimesheetView(){
     monthYearLabel: periodLabel(CURRENT_PERIOD),
     year: sy, month: sm, // fallback saja kalau parseSheetDateKey gagal
     rows: rowState,
-    approval: null // draft murni, belum ada submission — watermark DRAFT
+    approval: null, // draft murni
+    isManualSign: isManualSign
   });
 }
 
-// Export PDF di halaman Input Timesheet: kalau periode yang lagi dibuka
-// ternyata sudah pernah disubmit (ada di MY_SUBMISSIONS), pakai data
-// approval asli (ttd+timestamp asli). Kalau belum pernah disubmit sama
-// sekali, fallback ke preview draft (watermark "BELUM FINAL — DRAFT").
-async function exportTimesheetPDF(){
+// Export PDF di halaman Input Timesheet
+async function exportTimesheetPDF(isManualSign=false){
   const match = findSubmissionForPeriod(MY_SUBMISSIONS, CURRENT_PERIOD);
-  if(match){ await printSubmission(match.SubmissionID); return; }
-  buildPrintTimesheetView();
+  if(match){ await printSubmission(match.SubmissionID, isManualSign); return; }
+  buildPrintTimesheetView(isManualSign);
   triggerPvPrint();
 }
-document.getElementById('btnExportPDF').addEventListener('click', exportTimesheetPDF);
+
+// Event Listeners for PDF Export
+const btnExportPDFDigital = document.getElementById('btnExportPDFDigital');
+if(btnExportPDFDigital) btnExportPDFDigital.addEventListener('click', ()=>exportTimesheetPDF(false));
+
+const btnExportPDFBlank = document.getElementById('btnExportPDFBlank');
+if(btnExportPDFBlank) btnExportPDFBlank.addEventListener('click', ()=>exportTimesheetPDF(true));
+
+const btnExportPDFBlank2 = document.getElementById('btnExportPDFBlank2');
+if(btnExportPDFBlank2) btnExportPDFBlank2.addEventListener('click', ()=>exportTimesheetPDF(true));
+
+const btnExportPDFOld = document.getElementById('btnExportPDF');
+if(btnExportPDFOld) btnExportPDFOld.addEventListener('click', ()=>exportTimesheetPDF(false));
 
 // =========================================================
 // ADMIN PANEL
