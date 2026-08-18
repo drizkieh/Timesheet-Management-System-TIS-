@@ -269,36 +269,36 @@ html,body{overflow-x:hidden;max-width:100%;}
 </div>
 
 <!-- ============ PUBLIC STANDALONE MASTER PROJECT VIEW ============ -->
-<div id="publicMasterView" style="display:none; width:100%; min-height:100vh; background:#F8FAFC; padding:24px; box-sizing:border-box;">
-  <div style="max-width:1200px; margin:0 auto; background:#fff; border-radius:16px; border:1px solid #E2E8F0; box-shadow:0 10px 30px rgba(14,23,48,0.05); padding:24px;">
+<div id="publicMasterView" style="display:none; width:100%; min-height:100vh; background:#F8FAFC; padding:16px; box-sizing:border-box;">
+  <div style="max-width:1200px; margin:0 auto; background:#fff; border-radius:16px; border:1px solid #E2E8F0; box-shadow:0 10px 30px rgba(14,23,48,0.05); padding:16px;" class="md:p-6">
     <!-- Header -->
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; border-bottom:1px solid #F1F5F9; padding-bottom:20px; margin-bottom:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; border-bottom:1px solid #F1F5F9; padding-bottom:16px; margin-bottom:16px;">
       <div style="display:flex; align-items:center; gap:12px;">
-        <img src="logo.png" alt="Logo Integra" style="width:40px;height:40px;object-fit:contain;border-radius:8px;">
+        <img src="logo.png" alt="Logo Integra" style="width:38px;height:38px;object-fit:contain;border-radius:8px;">
         <div>
-          <div style="font-weight:800; font-size:18px; color:#0E1730; line-height:1.2;">PT INTEGRA SOLUSI MANDIRI</div>
-          <div style="font-size:11px; color:#64748B; font-weight:600; letter-spacing:0.02em;">MASTER DATA PROJECT &amp; SITE ID (PUBLIC VIEW)</div>
+          <div style="font-weight:800; font-size:16px; color:#0E1730; line-height:1.2;" class="md:text-lg">PT INTEGRA SOLUSI MANDIRI</div>
+          <div style="font-size:10px; color:#64748B; font-weight:600; letter-spacing:0.02em;" class="md:text-xs">MASTER DATA PROJECT &amp; SITE ID (PUBLIC VIEW)</div>
         </div>
       </div>
-      <div style="display:flex; gap:10px; align-items:center;">
-        <div id="publicMasterLoading" style="display:none; align-items:center; gap:8px; font-size:12.5px; color:#2563EB; font-weight:600;">
-          <div style="width:16px; height:16px; border:2px solid #DCE8FF; border-top-color:#2563EB; border-radius:50%; animation:spin .7s linear infinite;"></div>
-          Memuat data...
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; width:100%; justify-content:space-between;" class="md:w-auto md:justify-end">
+        <div id="publicMasterLoading" style="display:none; align-items:center; gap:6px; font-size:12px; color:#2563EB; font-weight:600;">
+          <div style="width:14px; height:14px; border:2px solid #DCE8FF; border-top-color:#2563EB; border-radius:50%; animation:spin .7s linear infinite;"></div>
+          Memuat...
         </div>
-        <a href="#" class="btn btn-outline" style="height:36px; font-size:12px; display:inline-flex; align-items:center; gap:6px;"><i data-lucide="log-in" class="w-3.5 h-3.5"></i>Kembali ke Login</a>
+        <a href="#" class="btn btn-outline text-xs" style="height:34px; display:inline-flex; align-items:center; gap:6px; padding:0 12px;"><i data-lucide="log-in" class="w-3.5 h-3.5"></i>Login</a>
       </div>
     </div>
 
     <!-- Search Controls -->
-    <div style="display:grid; grid-template-columns:1fr 220px auto; gap:12px; margin-bottom:16px;">
+    <div class="grid grid-cols-1 sm:grid-cols-[1fr_200px_auto] gap-3 mb-4">
       <div class="relative">
         <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
-        <input id="publicMasterSearch" placeholder="Cari Project ID, Site ID, Nama Project, atau Customer..." style="padding-left:36px; width:100%; border:1px solid #CBD5E1; border-radius:8px; height:38px; font-size:13px; box-sizing:border-box;" autocomplete="off">
+        <input id="publicMasterSearch" placeholder="Cari Project, Site ID, atau Customer..." style="padding-left:36px; width:100%; border:1px solid #CBD5E1; border-radius:8px; height:38px; font-size:13px; box-sizing:border-box;" autocomplete="off">
       </div>
-      <select id="publicMasterFilterCustomer" style="border:1px solid #CBD5E1; border-radius:8px; height:38px; font-size:13px; padding:0 8px;">
+      <select id="publicMasterFilterCustomer" style="border:1px solid #CBD5E1; border-radius:8px; height:38px; font-size:13px; padding:0 8px; width:100%; box-sizing:border-box;">
         <option value="">Semua Customer</option>
       </select>
-      <button id="btnPublicMasterRefresh" class="btn btn-outline" style="height:38px; display:inline-flex; align-items:center; gap:6px; font-size:13px;"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Refresh Data</button>
+      <button id="btnPublicMasterRefresh" class="btn btn-outline w-full sm:w-auto" style="height:38px; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:13px;"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Refresh Data</button>
     </div>
 
     <!-- Tab Filter: Project ID vs Site ID -->
@@ -307,8 +307,8 @@ html,body{overflow-x:hidden;max-width:100%;}
       <button class="btn btn-outline text-[12px]" id="btnPublicTabSite" style="padding:6px 14px;">Site ID</button>
     </div>
 
-    <!-- Master Table Wrap -->
-    <div style="overflow-x:auto; border:1px solid #E2E8F0; border-radius:10px;">
+    <!-- Master Table Wrap (Desktop Only) -->
+    <div class="hidden md:block overflow-x-auto border border-slate-200 rounded-xl">
       <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
         <thead>
           <tr style="background:#F8FAFC; border-bottom:1px solid #E2E8F0; color:#475569; font-weight:700;">
@@ -325,15 +325,21 @@ html,body{overflow-x:hidden;max-width:100%;}
           </tr>
         </tbody>
       </table>
-      <div id="publicMasterEmpty" style="display:none; text-align:center; padding:40px; color:#94A3B8; font-size:14px;">
-        Tidak ada master data project yang cocok dengan pencarian Anda.
-      </div>
+    </div>
+
+    <!-- Mobile Stacked Card View (Mobile Only) -->
+    <div class="block md:hidden space-y-3" id="publicMasterCards">
+      <!-- Cards rendered here by JS -->
+    </div>
+
+    <div id="publicMasterEmpty" style="display:none; text-align:center; padding:40px; color:#94A3B8; font-size:14px;">
+      Tidak ada master data project yang cocok dengan pencarian Anda.
     </div>
 
     <!-- Footer -->
     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; font-size:12px; color:#64748B;">
       <span id="publicMasterCount">0 project ditemukan</span>
-      <span>© PT Integra Solusi Mandiri · v1.2.0</span>
+      <span>© PT Integra Solusi Mandiri · v1.3.0</span>
     </div>
   </div>
 </div>
@@ -3738,8 +3744,12 @@ function renderPublicMasterTable() {
   });
 
   const tbody = document.getElementById('publicMasterTBody');
+  const cardsContainer = document.getElementById('publicMasterCards');
   if (!tbody) return;
+  
   tbody.innerHTML = '';
+  if (cardsContainer) cardsContainer.innerHTML = '';
+
   const emptyEl = document.getElementById('publicMasterEmpty');
   document.getElementById('publicMasterCount').textContent = `${keys.length} project ditemukan`;
 
@@ -3753,6 +3763,8 @@ function renderPublicMasterTable() {
     const p = PROJECTS[k];
     const siteId = p.siteId || '';
     const baseId = p.projectId || k.split(' - ')[0];
+
+    // 1. Render Table Row (Desktop)
     const tr = document.createElement('tr');
     tr.style.borderBottom = '1px solid #F1F5F9';
     tr.innerHTML = `
@@ -3763,6 +3775,39 @@ function renderPublicMasterTable() {
       <td style="padding:12px 16px; color:#334155;">${p.customer || '-'}</td>
     `;
     tbody.appendChild(tr);
+
+    // 2. Render Mobile Card (Mobile)
+    if (cardsContainer) {
+      const card = document.createElement('div');
+      card.className = "bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-2.5";
+      card.innerHTML = `
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Project ID</div>
+            <div class="text-[14px] font-bold text-slate-900">${baseId}</div>
+          </div>
+          <div class="text-right">
+            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Site ID</div>
+            <div class="text-[12px] font-mono font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded mt-0.5 inline-block">${siteId || '-'}</div>
+          </div>
+        </div>
+        <div class="border-t border-slate-100 pt-2">
+          <div class="text-[10px] text-slate-400 font-medium">Project Name</div>
+          <div class="text-[13px] text-slate-700 font-semibold mt-0.5">${p.name || '-'}</div>
+        </div>
+        <div class="grid grid-cols-2 gap-2 border-t border-slate-100 pt-2">
+          <div>
+            <div class="text-[10px] text-slate-400 font-medium">Phase</div>
+            <div class="inline-block bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[11px] font-semibold mt-0.5">${p.phase || '-'}</div>
+          </div>
+          <div>
+            <div class="text-[10px] text-slate-400 font-medium">Customer</div>
+            <div class="text-[12px] text-slate-700 font-semibold mt-0.5">${p.customer || '-'}</div>
+          </div>
+        </div>
+      `;
+      cardsContainer.appendChild(card);
+    }
   });
 }
 
