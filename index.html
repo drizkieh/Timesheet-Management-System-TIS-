@@ -1146,6 +1146,31 @@ async function handleSupabaseRequest(url, options) {
 
   try {
     switch (action) {
+      case 'login': {
+        const { data: user } = await supabaseClient.from('users')
+          .select('*')
+          .eq('username', params.username)
+          .eq('password', params.password)
+          .eq('status', 'Aktif')
+          .maybeSingle();
+
+        if (!user) {
+          result = { error: 'Username atau password salah, atau akun Anda dinonaktifkan.' };
+        } else {
+          result = {
+            user: {
+              username: user.username,
+              fullname: user.fullname,
+              role: user.role,
+              project: user.project,
+              position: user.position,
+              status: user.status,
+              hasSignature: user.has_signature || false
+            }
+          };
+        }
+        break;
+      }
       case 'getMasterProject': {
         const { data } = await supabaseClient.from('master_project').select('*').order('id', { ascending: true });
         result = (data || []).map(row => ({
