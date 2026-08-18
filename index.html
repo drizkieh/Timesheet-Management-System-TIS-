@@ -7,6 +7,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --navy:#0E1730;
@@ -321,7 +322,7 @@ html,body{overflow-x:hidden;max-width:100%;}
         </thead>
         <tbody id="publicMasterTBody">
           <tr>
-            <td colspan="5" style="text-align:center; padding:40px; color:#94A3B8;">⏳ Menghubungkan ke Google Sheets...</td>
+            <td colspan="5" style="text-align:center; padding:40px; color:#94A3B8;">⏳ Menghubungkan ke database...</td>
           </tr>
         </tbody>
       </table>
@@ -352,7 +353,7 @@ html,body{overflow-x:hidden;max-width:100%;}
     <img src="logo.png" alt="Logo Integra" style="width:56px;height:56px;object-fit:contain;margin:0 auto 20px;">
     
     <div style="color:#fff;font-size:16px;font-weight:700;margin-bottom:6px;">Memuat Dashboard...</div>
-    <div style="color:#8A93A6;font-size:12px;margin-bottom:28px;" id="loadingMsg">Menghubungkan ke Google Sheets</div>
+    <div style="color:#8A93A6;font-size:12px;margin-bottom:28px;" id="loadingMsg">Menghubungkan ke database</div>
     <div style="width:200px;height:4px;background:#1B2547;border-radius:999px;margin:0 auto;overflow:hidden;">
       <div id="loadingBar" style="height:100%;width:0%;background:linear-gradient(90deg,#3B82F6,#F59E0B);border-radius:999px;transition:width .4s ease;"></div>
     </div>
@@ -1109,10 +1110,495 @@ html,body{overflow-x:hidden;max-width:100%;}
 <script>
 lucide.createIcons();
 
-// ================= GOOGLE SHEETS CONFIG =================
-let APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhipIs-9yF4QsXJf7wPwdJgTd2rAbV8iKwSh4C9LtJgNyBLEY2Aakn7br7twLJA43BTA/exec";
+// ================= SUPABASE CONFIGURATION =================
+const SUPABASE_URL = "https://ylnvepnpiwfrvneajmvq.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_Jo5GXu8rRgh86lgYWm3WlA_xiLPuoam";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Dummy URL to keep existing variables/endpoints working
+let APPS_SCRIPT_URL = "https://supabase-endpoint-placeholder.local/api";
 let CONSULTANT_NAME = "";
 let CURRENT_USER    = null;
+
+// ================= SUPABASE REQUEST COMPATIBILITY INTERCEPTOR =================
+async function handleSupabaseRequest(url, options) {
+  let action = '';
+  let params = {};
+
+  // Extract query parameters for GET requests
+  const urlObj = new URL(url);
+  action = urlObj.searchParams.get('action') || '';
+  for (const [key, value] of urlObj.searchParams.entries()) {
+    if (key !== 'action') params[key] = value;
+  }
+
+  // Extract body parameters for POST requests
+  if (options && options.body) {
+    try {
+      const body = JSON.parse(options.body);
+      action = body.action || action;
+      params = { ...params, ...body };
+    } catch (e) {}
+  }
+
+  let result = null;
+  let status = 200;
+
+  try {
+    switch (action) {
+      case 'getMasterProject': {
+        const { data } = await supabaseClient.from('master_project').select('*').order('id', { ascending: true });
+        result = (data || []).map(row => ({
+          ProjectID: row.project_id,
+          SiteID: row.site_id,
+          ProjectName: row.project_name,
+          Phase: row.phase,
+          Customer: row.customer
+        }));
+        break;
+      }
+      case 'getMasterActivity': {
+        const { data } = await supabaseClient.from('master_activity').select('*').order('id', { ascending: true });
+        result = (data || []).map(row => ({ Activity: row.activity }));
+        break;
+      }
+      case 'getMasterLocation': {
+        const { data } = await supabaseClient.from('master_location').select('*').order('id', { ascending: true });
+        result = (data || []).map(row => ({ Location: row.location }));
+        break;
+      }
+      case 'getTimesheet': {
+        const { data } = await supabaseClient.from('timesheet')
+          .select('*')
+          .eq('consultant', params.consultant)
+          .gte('date', params.startDate)
+          .lte('date', params.endDate)
+          .order('date', { ascending: true });
+        result = (data || []).map(row => ({
+          sheetRowId: row.id,
+          consultant: row.consultant,
+          date: row.date,
+          pid: row.pid,
+          activity: row.activity,
+          location: row.location,
+          hours: row.hours,
+          mandays: Number(row.mandays) || 0,
+          holiday: row.holiday || false,
+          filled: row.filled || false,
+          status: row.status || 'Draft'
+        }));
+        break;
+      }
+      case 'cleanupDuplicates': {
+        result = { removed: 0 };
+        break;
+      }
+      case 'getMySubmissionStatus': {
+        const { data } = await supabaseClient.from('submissions')
+          .select('status')
+          .eq('consultant', params.consultant)
+          .eq('period_start', CURRENT_PERIOD.start)
+          .eq('period_end', CURRENT_PERIOD.end)
+          .maybeSingle();
+        result = { status: data ? data.status : null };
+        break;
+      }
+      case 'deleteTimesheet': {
+        if (params.rowId) {
+          await supabaseClient.from('timesheet').delete().eq('id', params.rowId);
+        } else {
+          await supabaseClient.from('timesheet').delete().eq('consultant', params.consultant).eq('date', params.date);
+        }
+        result = { success: true };
+        break;
+      }
+      case 'saveTimesheet': {
+        const savedIds = [];
+        if (params.rows && Array.isArray(params.rows)) {
+          for (const r of params.rows) {
+            const rowData = {
+              consultant: r.consultant,
+              date: r.date,
+              pid: r.pid,
+              activity: r.activity,
+              location: r.location,
+              hours: r.hours,
+              mandays: Number(r.mandays) || 0,
+              holiday: r.holiday || false,
+              filled: r.filled || false,
+              status: r.status || 'Draft'
+            };
+            if (r.sheetRowId) {
+              await supabaseClient.from('timesheet').update(rowData).eq('id', r.sheetRowId);
+              savedIds.push(r.sheetRowId);
+            } else {
+              const { data } = await supabaseClient.from('timesheet').insert(rowData).select('id').single();
+              savedIds.push(data ? data.id : null);
+            }
+          }
+        }
+        result = { rowIds: savedIds };
+        break;
+      }
+      case 'submitForApproval': {
+        const submissionId = `${params.consultant}_${params.periodStart}_${params.periodEnd}`;
+        const { data: userData } = await supabaseClient.from('users').select('signature_base64').eq('username', params.consultant).maybeSingle();
+        const consultantSignature = userData ? userData.signature_base64 : null;
+
+        const subData = {
+          submission_id: submissionId,
+          consultant: params.consultant,
+          project: params.project,
+          period_start: params.periodStart,
+          period_end: params.periodEnd,
+          status: 'Submitted',
+          submitted_at: new Date().toISOString(),
+          consultant_signature: consultantSignature,
+          pm_name: null, pm_timestamp: null, pm_signature: null,
+          depthead_name: null, depthead_timestamp: null, depthead_signature: null,
+          divhead_name: null, divhead_timestamp: null, divhead_signature: null
+        };
+
+        await supabaseClient.from('timesheet')
+          .update({ status: 'Submitted' })
+          .eq('consultant', params.consultant)
+          .gte('date', params.periodStart)
+          .lte('date', params.periodEnd);
+
+        await supabaseClient.from('submissions').upsert(subData, { onConflict: 'submission_id' });
+        result = { success: true };
+        break;
+      }
+      case 'getSubmissionsList': {
+        let qSub = supabaseClient.from('submissions').select('*');
+        if (params.consultant) {
+          qSub = qSub.eq('consultant', params.consultant);
+        }
+        const { data } = await qSub.order('submitted_at', { ascending: false });
+        result = (data || []).map(row => ({
+          SubmissionID: row.submission_id,
+          Consultant: row.consultant,
+          Project: row.project,
+          PeriodStart: row.period_start,
+          PeriodEnd: row.period_end,
+          Status: row.status,
+          SubmittedAt: row.submitted_at,
+          Consultant_Signature: row.consultant_signature,
+          PM_Name: row.pm_name,
+          PM_Timestamp: row.pm_timestamp,
+          PM_Signature: row.pm_signature,
+          DeptHead_Name: row.depthead_name,
+          DeptHead_Timestamp: row.depthead_timestamp,
+          DeptHead_Signature: row.depthead_signature,
+          DivHead_Name: row.divhead_name,
+          DivHead_Timestamp: row.divhead_timestamp,
+          DivHead_Signature: row.divhead_signature,
+          RevisionCount: row.revision_count,
+          LastRevisedAt: row.last_revised_at,
+          LastRevisionReason: row.last_revision_reason,
+          ApprovalHistory: typeof row.approval_history === 'string' ? JSON.parse(row.approval_history) : (row.approval_history || [])
+        }));
+        break;
+      }
+      case 'getSubmissionDetail': {
+        const { data: sub } = await supabaseClient.from('submissions').select('*').eq('submission_id', params.submissionId).maybeSingle();
+        if (!sub) {
+          result = { error: 'Submission tidak ditemukan' };
+          break;
+        }
+
+        const { data: tsRows } = await supabaseClient.from('timesheet')
+          .select('*')
+          .eq('consultant', sub.consultant)
+          .gte('date', sub.period_start)
+          .lte('date', sub.period_end)
+          .order('date', { ascending: true });
+
+        const mappedRows = (tsRows || []).map(row => ({
+          sheetRowId: row.id,
+          consultant: row.consultant,
+          date: row.date,
+          pid: row.pid,
+          activity: row.activity,
+          location: row.location,
+          hours: row.hours,
+          mandays: Number(row.mandays) || 0,
+          holiday: row.holiday || false,
+          filled: row.filled || false,
+          status: row.status || 'Draft'
+        }));
+
+        result = {
+          SubmissionID: sub.submission_id,
+          Consultant: sub.consultant,
+          Project: sub.project,
+          PeriodStart: sub.period_start,
+          PeriodEnd: sub.period_end,
+          Status: sub.status,
+          SubmittedAt: sub.submitted_at,
+          Consultant_Signature: sub.consultant_signature,
+          PM_Name: sub.pm_name,
+          PM_Timestamp: sub.pm_timestamp,
+          PM_Signature: sub.pm_signature,
+          DeptHead_Name: sub.depthead_name,
+          DeptHead_Timestamp: sub.depthead_timestamp,
+          DeptHead_Signature: sub.depthead_signature,
+          DivHead_Name: sub.divhead_name,
+          DivHead_Timestamp: sub.divhead_timestamp,
+          DivHead_Signature: sub.divhead_signature,
+          RevisionCount: sub.revision_count,
+          LastRevisedAt: sub.last_revised_at,
+          LastRevisionReason: sub.last_revision_reason,
+          ApprovalHistory: typeof sub.approval_history === 'string' ? JSON.parse(sub.approval_history) : (sub.approval_history || []),
+          timesheetRows: mappedRows
+        };
+        break;
+      }
+      case 'reviseApprovedSubmission': {
+        const { data: sub } = await supabaseClient.from('submissions').select('*').eq('submission_id', params.submissionId).maybeSingle();
+        if (!sub) {
+          result = { error: 'Submission tidak ditemukan' };
+          break;
+        }
+
+        const history = typeof sub.approval_history === 'string' ? JSON.parse(sub.approval_history) : (sub.approval_history || []);
+        const cycle = history.length + 1;
+        history.push({
+          cycle: cycle,
+          revisedAt: new Date().toISOString(),
+          revisedBy: params.consultant,
+          revisionReason: params.reason,
+          PM: { name: sub.pm_name, signature: sub.pm_signature, timestamp: sub.pm_timestamp },
+          DeptHead: { name: sub.depthead_name, signature: sub.depthead_signature, timestamp: sub.depthead_timestamp },
+          DivHead: { name: sub.divhead_name, signature: sub.divhead_signature, timestamp: sub.divhead_timestamp }
+        });
+
+        await supabaseClient.from('submissions').update({
+          status: 'Draft',
+          revision_count: (sub.revision_count || 0) + 1,
+          last_revised_at: new Date().toISOString(),
+          last_revision_reason: params.reason,
+          approval_history: history,
+          pm_name: null, pm_timestamp: null, pm_signature: null,
+          depthead_name: null, depthead_timestamp: null, depthead_signature: null,
+          divhead_name: null, divhead_timestamp: null, divhead_signature: null
+        }).eq('submission_id', params.submissionId);
+
+        await supabaseClient.from('timesheet')
+          .update({ status: 'Draft' })
+          .eq('consultant', sub.consultant)
+          .gte('date', sub.period_start)
+          .lte('date', sub.period_end);
+
+        result = { success: true };
+        break;
+      }
+      case 'getAllTimesheet': {
+        const { data } = await supabaseClient.from('timesheet')
+          .select('*')
+          .eq('consultant', params.consultant)
+          .gte('date', params.startDate)
+          .lte('date', params.endDate)
+          .order('date', { ascending: true });
+        result = (data || []).map(row => ({
+          sheetRowId: row.id,
+          consultant: row.consultant,
+          date: row.date,
+          pid: row.pid,
+          activity: row.activity,
+          location: row.location,
+          hours: row.hours,
+          mandays: Number(row.mandays) || 0,
+          holiday: row.holiday || false,
+          filled: row.filled || false,
+          status: row.status || 'Draft'
+        }));
+        break;
+      }
+      case 'getUsers': {
+        const { data } = await supabaseClient.from('users').select('*');
+        result = (data || []).map(row => ({
+          Username: row.username,
+          Password: row.password,
+          FullName: row.fullname,
+          Role: row.role,
+          Project: row.project,
+          Position: row.position,
+          Status: row.status,
+          HasSignature: row.has_signature || false,
+          Signature: row.signature_base64
+        }));
+        break;
+      }
+      case 'deleteUser': {
+        await supabaseClient.from('users').delete().eq('username', params.username);
+        result = { success: true };
+        break;
+      }
+      case 'saveUser': {
+        const userData = {
+          username: params.user.Username,
+          password: params.user.Password,
+          fullname: params.user.FullName,
+          role: params.user.Role,
+          project: params.user.Project,
+          position: params.user.Position,
+          status: params.user.Status,
+          has_signature: params.user.HasSignature || false,
+          signature_base64: params.user.Signature || null
+        };
+        if (params.isEdit) {
+          await supabaseClient.from('users').update(userData).eq('username', params.user.Username);
+        } else {
+          await supabaseClient.from('users').insert(userData);
+        }
+        result = { success: true };
+        break;
+      }
+      case 'getPendingApprovals': {
+        let qPending = supabaseClient.from('submissions').select('*');
+        if (params.role === 'pm') {
+          const { data: pmUserData } = await supabaseClient.from('users').select('project').eq('username', params.username).maybeSingle();
+          const pmProject = pmUserData ? pmUserData.project : '';
+          qPending = qPending.eq('project', pmProject);
+          if (params.mode === 'pending') {
+            qPending = qPending.eq('status', 'Submitted');
+          } else {
+            qPending = qPending.in('status', ['PM_Approved', 'DeptHead_Approved', 'Approved', 'Rejected']);
+          }
+        } else if (params.role === 'depthead') {
+          if (params.mode === 'pending') {
+            qPending = qPending.eq('status', 'PM_Approved');
+          } else {
+            qPending = qPending.in('status', ['DeptHead_Approved', 'Approved', 'Rejected']);
+          }
+        } else if (params.role === 'divhead') {
+          if (params.mode === 'pending') {
+            qPending = qPending.eq('status', 'DeptHead_Approved');
+          } else {
+            qPending = qPending.in('status', ['Approved', 'Rejected']);
+          }
+        }
+        const { data } = await qPending.order('submitted_at', { ascending: false });
+        result = (data || []).map(row => ({
+          SubmissionID: row.submission_id,
+          Consultant: row.consultant,
+          Project: row.project,
+          PeriodStart: row.period_start,
+          PeriodEnd: row.period_end,
+          Status: row.status,
+          SubmittedAt: row.submitted_at,
+          Consultant_Signature: row.consultant_signature,
+          PM_Name: row.pm_name,
+          PM_Timestamp: row.pm_timestamp,
+          PM_Signature: row.pm_signature,
+          DeptHead_Name: row.depthead_name,
+          DeptHead_Timestamp: row.depthead_timestamp,
+          DeptHead_Signature: row.depthead_signature,
+          DivHead_Name: row.divhead_name,
+          DivHead_Timestamp: row.divhead_timestamp,
+          DivHead_Signature: row.divhead_signature,
+          RevisionCount: row.revision_count,
+          LastRevisedAt: row.last_revised_at,
+          LastRevisionReason: row.last_revision_reason,
+          ApprovalHistory: typeof row.approval_history === 'string' ? JSON.parse(row.approval_history) : (row.approval_history || [])
+        }));
+        break;
+      }
+      case 'approveSubmission': {
+        const { data: userData } = await supabaseClient.from('users').select('fullname, signature_base64').eq('username', params.username).maybeSingle();
+        const name = userData ? userData.fullname : params.username;
+        const signature = userData ? userData.signature_base64 : null;
+        const now = new Date().toISOString();
+
+        const updateData = {};
+        let nextStatus = '';
+        if (params.role === 'pm') {
+          updateData.status = 'PM_Approved';
+          updateData.pm_name = name;
+          updateData.pm_timestamp = now;
+          updateData.pm_signature = signature;
+          nextStatus = 'PM_Approved';
+        } else if (params.role === 'depthead') {
+          updateData.status = 'DeptHead_Approved';
+          updateData.depthead_name = name;
+          updateData.depthead_timestamp = now;
+          updateData.depthead_signature = signature;
+          nextStatus = 'DeptHead_Approved';
+        } else if (params.role === 'divhead') {
+          updateData.status = 'Approved';
+          updateData.divhead_name = name;
+          updateData.divhead_timestamp = now;
+          updateData.divhead_signature = signature;
+          nextStatus = 'Approved';
+        }
+
+        await supabaseClient.from('submissions').update(updateData).eq('submission_id', params.submissionId);
+
+        if (nextStatus === 'Approved') {
+          const { data: sub } = await supabaseClient.from('submissions').select('*').eq('submission_id', params.submissionId).maybeSingle();
+          if (sub) {
+            await supabaseClient.from('timesheet')
+              .update({ status: 'Approved' })
+              .eq('consultant', sub.consultant)
+              .gte('date', sub.period_start)
+              .lte('date', sub.period_end);
+          }
+        }
+        result = { success: true };
+        break;
+      }
+      case 'rejectSubmission': {
+        const { data: sub } = await supabaseClient.from('submissions').select('*').eq('submission_id', params.submissionId).maybeSingle();
+        if (sub) {
+          await supabaseClient.from('submissions').update({
+            status: 'Rejected',
+            last_revised_at: new Date().toISOString(),
+            last_revision_reason: `Rejected by ${params.username}: "${params.reason}"`
+          }).eq('submission_id', params.submissionId);
+
+          await supabaseClient.from('timesheet')
+            .update({ status: 'Draft' })
+            .eq('consultant', sub.consultant)
+            .gte('date', sub.period_start)
+            .lte('date', sub.period_end);
+        }
+        result = { success: true };
+        break;
+      }
+      case 'saveApproverSignature': {
+        await supabaseClient.from('users').update({
+          has_signature: true,
+          signature_base64: params.signatureBase64
+        }).eq('username', params.username);
+        result = { success: true };
+        break;
+      }
+      default:
+        console.warn('Unknown Supabase action:', action);
+        result = { error: 'Unknown action: ' + action };
+    }
+  } catch (err) {
+    console.error('Supabase query error on action:', action, err);
+    result = { error: err.message || 'Supabase query failed' };
+    status = 500;
+  }
+
+  // Return formatted response compatible with standard fetch
+  return new Response(JSON.stringify(result), {
+    status: status,
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+// Intercept window.fetch to route all APPS_SCRIPT_URL API calls to Supabase instead
+const originalFetch = window.fetch;
+window.fetch = async function(url, options) {
+  if (typeof url === 'string' && (url.includes(APPS_SCRIPT_URL) || url.includes('supabase-endpoint-placeholder'))) {
+    return await handleSupabaseRequest(url, options);
+  }
+  return originalFetch(url, options);
+};
 
 // =========================================================
 // PERIODE / CUTOFF (bebas, bukan cuma kalender 1-akhir bulan)
@@ -1415,7 +1901,7 @@ async function loadFromSheets(){
   if(!APPS_SCRIPT_URL) return;
   const statusEl = document.getElementById('connStatus');
   const badge = document.getElementById('syncBadge');
-  badge.textContent = '⏳ Memuat dari Sheets...';
+  badge.textContent = '⏳ Memuat dari Supabase...';
   setLoadingProgress(20, 'Mengambil Master Project...');
   try{
     const [mp, ma, ml] = await Promise.all([
@@ -1443,15 +1929,15 @@ async function loadFromSheets(){
     document.getElementById('btnConnectSheet').style.background='#E7F9EE';
     document.getElementById('btnConnectSheet').style.color='#15803D';
     document.getElementById('btnConnectSheet').style.borderColor='#BBF0CE';
-    badge.textContent = '✓ Sinkron dari Google Sheets';
-    showToast('Data berhasil dimuat dari Google Sheets','ok');
+    badge.textContent = '✓ Sinkron dari Supabase';
+    showToast('Data berhasil dimuat dari Supabase','ok');
     render();
     populateMasterModal();
     loadMySubmissionStatus();
   }catch(err){
     statusEl.textContent = 'Gagal konek — cek URL';
     badge.textContent = '⚠ Gagal sinkron';
-    showToast('Gagal konek ke Google Sheets','err');
+    showToast('Gagal konek ke Supabase','err');
     console.error(err);
   }
 }
