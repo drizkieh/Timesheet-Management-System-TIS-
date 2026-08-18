@@ -2446,6 +2446,17 @@ function parseSheetDateKey(str){
   const d = new Date(str);
   return isNaN(d.getTime()) ? null : d;
 }
+
+function resolveApproverName(role, defaultName){
+  if(CURRENT_USER && CURRENT_USER.project){
+    if(CURRENT_USER.project.toLowerCase().includes('mbg') && role === 'pm') return 'Yudo Purnomo';
+  }
+  if(role === 'pm') return 'Jodie Satria Effendi';
+  if(role === 'depthead') return 'Wisnu Hendra Pratama';
+  if(role === 'divhead') return 'Agust Triyanto';
+  return defaultName || '';
+}
+
 function renderPrintDocument({consultant, position, project, customer, monthYearLabel, year, month, rows, approval, isManualSign=false}){
   document.getElementById('pvConsultant').textContent = consultant || '-';
   document.getElementById('pvPosition').textContent    = position || '-';
@@ -2461,20 +2472,26 @@ function renderPrintDocument({consultant, position, project, customer, monthYear
     revNote.style.display = 'none';
   }
 
+  // Nama-nama pejabat penandatangan
+  const pmName = (approval && approval.PM_Name) || resolveApproverName('pm', 'Jodie Satria Effendi');
+  const deptHeadName = (approval && approval.DeptHead_Name) || resolveApproverName('depthead', 'Wisnu Hendra Pratama');
+  const divHeadName = (approval && approval.DivHead_Name) || resolveApproverName('divhead', 'Agust Triyanto');
+
   if(isManualSign){
-    // Mode TTD Manual (Polos): Bersih tanpa gambar digital, tanpa timestamp, tanpa riwayat approval, tanpa watermark DRAFT
+    // Mode TTD Manual (Polos): Tampilkan nama pejabat di bawah kotak, tapi kotak tanda tangan bersih tanpa gambar digital, tanpa timestamp, tanpa riwayat approval, tanpa watermark
     fillSignatureSlot('Consultant', consultant, null, null);
-    fillSignatureSlot('PM',       (approval && approval.PM_Name) || '',       null, null);
-    fillSignatureSlot('DeptHead', (approval && approval.DeptHead_Name) || '', null, null);
-    fillSignatureSlot('DivHead',  (approval && approval.DivHead_Name) || '',  null, null);
+    fillSignatureSlot('PM',       pmName,       null, null); // Ada nama PM, kotak ttd kosong
+    fillSignatureSlot('DeptHead', deptHeadName, null, null); // Ada nama Dept Head, kotak ttd kosong
+    fillSignatureSlot('DivHead',  divHeadName,  null, null); // Ada nama Div Head, kotak ttd kosong
     renderApprovalHistoryBlock([]);
     document.getElementById('pvWatermark').style.display = 'none';
   } else {
-    // Mode Digital: Tampilkan TTD digital asli & timestamp approval
+    // Mode Digital:
+    // Sesuai instruksi: Tanda tangan PM dikosongkan sementara, namun NAMA PM tetap tampil jelas di bawah kotak
     fillSignatureSlot('Consultant', consultant, approval && approval.SubmittedAt, approval && approval.Consultant_Signature);
-    fillSignatureSlot('PM',       approval && approval.PM_Name,       approval && approval.PM_Timestamp,       approval && approval.PM_Signature);
-    fillSignatureSlot('DeptHead', approval && approval.DeptHead_Name, approval && approval.DeptHead_Timestamp, approval && approval.DeptHead_Signature);
-    fillSignatureSlot('DivHead',  approval && approval.DivHead_Name,  approval && approval.DivHead_Timestamp,  approval && approval.DivHead_Signature);
+    fillSignatureSlot('PM',       pmName,       null, null); // Kotak ttd PM kosong sementara, nama PM tetap ada
+    fillSignatureSlot('DeptHead', deptHeadName, approval && approval.DeptHead_Timestamp, approval && approval.DeptHead_Signature);
+    fillSignatureSlot('DivHead',  divHeadName,  approval && approval.DivHead_Timestamp,  approval && approval.DivHead_Signature);
     renderApprovalHistoryBlock(approval && approval.ApprovalHistory);
 
     const wm = document.getElementById('pvWatermark');
