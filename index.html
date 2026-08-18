@@ -1195,21 +1195,32 @@ async function handleSupabaseRequest(url, options) {
       case 'getTimesheet': {
         const { data } = await supabaseClient.from('timesheet')
           .select('*')
-          .eq('consultant', params.consultant)
-          .gte('date', params.startDate)
-          .lte('date', params.endDate)
-          .order('date', { ascending: true });
+          .ilike('consultant', params.consultant || '%')
+          .order('id', { ascending: true });
         result = (data || []).map(row => ({
+          RowID: row.id,
           sheetRowId: row.id,
+          id: row.id,
+          Consultant: row.consultant,
           consultant: row.consultant,
+          Date: row.date,
           date: row.date,
-          pid: row.pid,
-          activity: row.activity,
-          location: row.location,
-          hours: row.hours,
+          ProjectID: row.pid || '',
+          PID: row.pid || '',
+          pid: row.pid || '',
+          Activity: row.activity || '',
+          activity: row.activity || '',
+          Location: row.location || '',
+          location: row.location || '',
+          Hours: row.hours || '',
+          hours: row.hours || '',
+          Mandays: Number(row.mandays) || 0,
           mandays: Number(row.mandays) || 0,
+          Holiday: row.holiday || false,
           holiday: row.holiday || false,
+          Filled: row.filled || false,
           filled: row.filled || false,
+          Status: row.status || 'Draft',
           status: row.status || 'Draft'
         }));
         break;
@@ -1221,7 +1232,7 @@ async function handleSupabaseRequest(url, options) {
       case 'getMySubmissionStatus': {
         const { data } = await supabaseClient.from('submissions')
           .select('status')
-          .eq('consultant', params.consultant)
+          .ilike('consultant', params.consultant || '%')
           .eq('period_start', CURRENT_PERIOD.start)
           .eq('period_end', CURRENT_PERIOD.end)
           .maybeSingle();
@@ -1232,7 +1243,7 @@ async function handleSupabaseRequest(url, options) {
         if (params.rowId) {
           await supabaseClient.from('timesheet').delete().eq('id', params.rowId);
         } else {
-          await supabaseClient.from('timesheet').delete().eq('consultant', params.consultant).eq('date', params.date);
+          await supabaseClient.from('timesheet').delete().ilike('consultant', params.consultant).eq('date', params.date);
         }
         result = { success: true };
         break;
@@ -1242,20 +1253,21 @@ async function handleSupabaseRequest(url, options) {
         if (params.rows && Array.isArray(params.rows)) {
           for (const r of params.rows) {
             const rowData = {
-              consultant: r.consultant,
-              date: r.date,
-              pid: r.pid,
-              activity: r.activity,
-              location: r.location,
-              hours: r.hours,
-              mandays: Number(r.mandays) || 0,
-              holiday: r.holiday || false,
-              filled: r.filled || false,
-              status: r.status || 'Draft'
+              consultant: r.consultant || r.Consultant || CONSULTANT_NAME,
+              date: r.date || r.Date,
+              pid: r.pid || r.ProjectID || r.PID || null,
+              activity: r.activity || r.Activity || null,
+              location: r.location || r.Location || null,
+              hours: r.hours || r.Hours || null,
+              mandays: Number(r.mandays !== undefined ? r.mandays : (r.Mandays || 0)),
+              holiday: r.holiday !== undefined ? r.holiday : (r.Holiday || false),
+              filled: r.filled !== undefined ? r.filled : (r.Filled || false),
+              status: r.status || r.Status || 'Draft'
             };
-            if (r.sheetRowId) {
-              await supabaseClient.from('timesheet').update(rowData).eq('id', r.sheetRowId);
-              savedIds.push(r.sheetRowId);
+            const rowId = r.sheetRowId || r.RowID || r.id;
+            if (rowId) {
+              await supabaseClient.from('timesheet').update(rowData).eq('id', rowId);
+              savedIds.push(rowId);
             } else {
               const { data } = await supabaseClient.from('timesheet').insert(rowData).select('id').single();
               savedIds.push(data ? data.id : null);
@@ -1334,22 +1346,33 @@ async function handleSupabaseRequest(url, options) {
 
         const { data: tsRows } = await supabaseClient.from('timesheet')
           .select('*')
-          .eq('consultant', sub.consultant)
-          .gte('date', sub.period_start)
-          .lte('date', sub.period_end)
-          .order('date', { ascending: true });
+          .ilike('consultant', sub.consultant || '%')
+          .order('id', { ascending: true });
 
         const mappedRows = (tsRows || []).map(row => ({
+          RowID: row.id,
           sheetRowId: row.id,
+          id: row.id,
+          Consultant: row.consultant,
           consultant: row.consultant,
+          Date: row.date,
           date: row.date,
-          pid: row.pid,
-          activity: row.activity,
-          location: row.location,
-          hours: row.hours,
+          ProjectID: row.pid || '',
+          PID: row.pid || '',
+          pid: row.pid || '',
+          Activity: row.activity || '',
+          activity: row.activity || '',
+          Location: row.location || '',
+          location: row.location || '',
+          Hours: row.hours || '',
+          hours: row.hours || '',
+          Mandays: Number(row.mandays) || 0,
           mandays: Number(row.mandays) || 0,
+          Holiday: row.holiday || false,
           holiday: row.holiday || false,
+          Filled: row.filled || false,
           filled: row.filled || false,
+          Status: row.status || 'Draft',
           status: row.status || 'Draft'
         }));
 
@@ -1421,21 +1444,32 @@ async function handleSupabaseRequest(url, options) {
       case 'getAllTimesheet': {
         const { data } = await supabaseClient.from('timesheet')
           .select('*')
-          .eq('consultant', params.consultant)
-          .gte('date', params.startDate)
-          .lte('date', params.endDate)
-          .order('date', { ascending: true });
+          .ilike('consultant', params.consultant || '%')
+          .order('id', { ascending: true });
         result = (data || []).map(row => ({
+          RowID: row.id,
           sheetRowId: row.id,
+          id: row.id,
+          Consultant: row.consultant,
           consultant: row.consultant,
+          Date: row.date,
           date: row.date,
-          pid: row.pid,
-          activity: row.activity,
-          location: row.location,
-          hours: row.hours,
+          ProjectID: row.pid || '',
+          PID: row.pid || '',
+          pid: row.pid || '',
+          Activity: row.activity || '',
+          activity: row.activity || '',
+          Location: row.location || '',
+          location: row.location || '',
+          Hours: row.hours || '',
+          hours: row.hours || '',
+          Mandays: Number(row.mandays) || 0,
           mandays: Number(row.mandays) || 0,
+          Holiday: row.holiday || false,
           holiday: row.holiday || false,
+          Filled: row.filled || false,
           filled: row.filled || false,
+          Status: row.status || 'Draft',
           status: row.status || 'Draft'
         }));
         break;
@@ -1974,21 +2008,24 @@ function applySheetTimesheet(ts){
   // Reset semua baris non-holiday dulu biar tidak ada sisa data lama
   rowState.forEach(r=>{ if(!r.holiday){ r.sheetRowId=null; r.filled=false; r.pid=null; r.activity=null; r.location=null; r.hours=null; r.mandays=0; } });
   ts.forEach(entry=>{
-    if(!entry.Date) return;
-    // Cari berdasarkan RowID dulu, fallback ke tanggal
-    let row = entry.RowID ? rowState.find(r=>r.sheetRowId===entry.RowID) : null;
-    if(!row) row = rowState.find(r=>matchDateLoose(r.date, entry.Date));
+    const eDate = entry.Date || entry.date;
+    if(!eDate) return;
+    const eRowId = entry.RowID || entry.sheetRowId || entry.id;
+    let row = eRowId ? rowState.find(r=>r.sheetRowId===eRowId) : null;
+    if(!row) row = rowState.find(r=>matchDateLoose(r.date, eDate));
     if(row && !row.holiday){
-      row.pid        = entry.ProjectID || '';
-      row.activity   = entry.Activity  || '';
-      row.location   = entry.Location  || '';
-      row.hours      = entry.Hours     || '';
-      row.mandays    = parseFloat(entry.Mandays) || 1.0;
-      row.filled     = !!entry.ProjectID;
-      row.status     = entry.Status    || 'Draft';
-      row.sheetRowId = entry.RowID     || null;
+      const pid = entry.ProjectID || entry.pid || entry.PID || '';
+      const act = entry.Activity  || entry.activity || '';
+      row.pid        = pid;
+      row.activity   = act;
+      row.location   = entry.Location  || entry.location || '';
+      row.hours      = entry.Hours     || entry.hours || '';
+      row.mandays    = parseFloat(entry.Mandays !== undefined ? entry.Mandays : entry.mandays) || 1.0;
+      row.filled     = !!(pid || act || row.hours);
+      row.status     = entry.Status    || entry.status || 'Draft';
+      row.sheetRowId = eRowId          || null;
+      if(pid) trackUsage(pid, act);
     }
-    if(entry.ProjectID) trackUsage(entry.ProjectID, entry.Activity);
   });
 }
 function matchDateLoose(a, b) {
