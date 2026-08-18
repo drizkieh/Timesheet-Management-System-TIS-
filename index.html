@@ -1607,6 +1607,36 @@ let usageFrequency  = {};
 let activityHistory = [];
 let activeRowIdx    = null;
 
+// Helper: Parse rentang waktu "08:30 - 17:30" menjadi jam kerja desimal presisi (misal: 8 jam)
+function parseWorkHours(hoursStr){
+  if(!hoursStr) return 0;
+  hoursStr = String(hoursStr).trim();
+  if(/^\d+(\.\d+)?$/.test(hoursStr)) return parseFloat(hoursStr);
+  const parts = hoursStr.split(/[-–—]/).map(s=>s.trim());
+  if(parts.length === 2){
+    const parseMinutes = (t)=>{
+      const segs = t.split(/[:.]/).map(Number);
+      return (segs[0]||0)*60 + (segs[1]||0);
+    };
+    const startMin = parseMinutes(parts[0]);
+    const endMin = parseMinutes(parts[1]);
+    if(endMin > startMin){
+      let diff = (endMin - startMin) / 60;
+      if(diff >= 5) diff -= 1; // Kurangi 1 jam istirahat untuk kerja >= 5 jam
+      return Math.max(0, Math.round(diff * 10) / 10);
+    }
+  }
+  return parseFloat(hoursStr) || 0;
+}
+
+// Helper: Tentukan mandays otomatis (1.0 untuk full-day >= 5 jam, 0.5 untuk half-day)
+function getMandaysFromHours(hoursStr){
+  const hrs = parseWorkHours(hoursStr);
+  if(hrs <= 0) return 0;
+  if(hrs <= 4.5) return 0.5;
+  return 1.0;
+}
+
 // Bangun rowState dari semua tanggal bulan berjalan — kosong, nunggu data dari Sheets
 const _MONTH_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const _MONTH_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1738,7 +1768,13 @@ function showHrsSuggest(inputEl, idx){
   matches.forEach(m=>{
     const d=document.createElement('div'); d.className='suggest-item';
     d.textContent=m;
-    const pick = ()=>{ rowState[idx].hours=m; inputEl.value=m; closeSuggests(); };
+    const pick = ()=>{
+      rowState[idx].hours=m;
+      rowState[idx].mandays=getMandaysFromHours(m);
+      inputEl.value=m;
+      closeSuggests();
+      render();
+    };
     d.addEventListener('mousedown', e=>{ e.preventDefault(); pick(); });
     d.addEventListener('touchend',  e=>{ e.preventDefault(); pick(); });
     box.appendChild(d);
@@ -1999,8 +2035,8 @@ function updateTotals(){
   const holidays  = rowState.length - workDays.length;
   const pct       = workDays.length ? Math.round((filled / workDays.length) * 100) : 0;
 
-  // KPI ringkas di atas (sebelumnya angka statis "21/22" & "168")
-  const totalHours = workDays.filter(r=>r.filled).reduce((s,r)=>s + (parseFloat(r.hours) || 0), 0);
+  // KPI ringkas di atas dengan perhitungan jam kerja presisi
+  const totalHours = workDays.filter(r=>r.filled).reduce((s,r)=>s + parseWorkHours(r.hours), 0);
   const elDaysFilled = document.getElementById('kpiDaysFilled');
   if(elDaysFilled){
     elDaysFilled.textContent = filled;
@@ -2027,7 +2063,30 @@ renderHistoryChips();
 // TOOLBAR ACTIONS
 // =========================================================
 document.getElementById('btnTambahBaris').addEventListener('click',()=>{
-  rowState.push({date:"+1 hari",day:"",pid:null,activity:null,location:null,hours:null,mandays:0,holiday:false,filled:false,sheetRowId:null}); render();
+  let baseDate = CURRENT_PERIOD.start;
+  let baseDay = 'Senin';
+  if(activeRowIdx !== null && rowState[activeRowIdx]){
+    baseDate = rowState[activeRowIdx].date;
+    baseDay = rowState[activeRowIdx].day;
+  } else if(rowState.length > 0){
+    const last = rowState[rowState.length-1];
+    baseDate = last.date;
+    baseDay = last.day;
+  }
+  rowState.push({
+    date: baseDate,
+    day: baseDay,
+    pid: null,
+    activity: null,
+    location: 'The Prasada',
+    hours: '08:30 - 17:30',
+    mandays: 1.0,
+    holiday: false,
+    filled: false,
+    sheetRowId: null
+  });
+  render();
+  showToast(`Baris baru ditambahkan untuk tanggal ${baseDate}`,'info');
 });
 document.getElementById('btnCopyYesterday').addEventListener('click',()=>{
   const lastFilled=[...rowState].reverse().find(r=>r.filled&&!r.holiday);
@@ -2053,18 +2112,30 @@ document.getElementById('btnBulkDelete').addEventListener('click',async ()=>{
   const checked=[...document.querySelectorAll('.rowChk')].map((c,i)=>c.checked?i:-1).filter(i=>i>=0);
   if(!checked.length){ showToast('Centang minimal 1 baris.'); return; }
   if(!confirm(`Hapus ${checked.length} baris? Data juga akan dihapus dari Google Sheets.`)) return;
-  for(const i of checked){
-    if(rowState[i].holiday) continue;
-    const r=rowState[i];
-    if(APPS_SCRIPT_URL && r.date){
-      try{
-        await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'deleteTimesheet',consultant:CONSULTANT_NAME,date:r.date,rowId:r.sheetRowId||null})});
-      }catch(err){ console.error(err); }
+
+  const targets = checked.map(i => ({ idx: i, row: Object.assign({}, rowState[i]) })).filter(t => !t.row.holiday);
+
+  // Optimistic UI Update: langsung reset baris di tabel browser tanpa delay
+  checked.forEach(i => {
+    if(!rowState[i].holiday){
+      Object.assign(rowState[i], { pid: null, activity: null, location: null, hours: null, mandays: 0, filled: false, sheetRowId: null });
     }
-    Object.assign(rowState[i],{pid:null,activity:null,location:null,hours:null,mandays:0,filled:false,sheetRowId:null});
-  }
-  showToast('Baris terpilih dihapus dari Sheets','ok');
+  });
   render();
+  showToast('Menghapus data di Google Sheets...', 'info');
+
+  // Kirim request penghapusan ke Apps Script secara paralel
+  if(APPS_SCRIPT_URL){
+    const deletePromises = targets.filter(t => t.row.date).map(t =>
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'deleteTimesheet', consultant: CONSULTANT_NAME, date: t.row.date, rowId: t.row.sheetRowId || null })
+      }).catch(err => console.error(err))
+    );
+    await Promise.all(deletePromises);
+  }
+  showToast('Baris terpilih berhasil dihapus ✅', 'ok');
 });
 document.getElementById('chkAll').addEventListener('change',e=>{
   document.querySelectorAll('.rowChk').forEach(c=>c.checked=e.target.checked);
@@ -2265,9 +2336,10 @@ async function saveToSheets(status){
         periodEnd: CURRENT_PERIOD.end,
       })}).catch(()=>{});
     }
-    showToast(status==='Draft'?'Draft tersimpan ke Google Sheets.':'Timesheet berhasil di-submit ke Project Manager.','ok');
-    // Reload dari Sheets untuk konfirmasi data benar-benar sama
-    await loadFromSheets();
+    showToast(status==='Draft'?'Draft tersimpan ke Google Sheets ✅':'Timesheet berhasil di-submit ke Project Manager ✅','ok');
+    rowState.forEach(r => { if(r.filled) r.status = status; });
+    render();
+    loadMySubmissionStatus();
   }catch(err){
     console.error(err); showToast('Gagal menyimpan ke Google Sheets.','err');
   }
@@ -2284,6 +2356,13 @@ document.getElementById('btnSimpanDraft').addEventListener('click', async ()=>{
   lucide.createIcons();
 });
 document.getElementById('btnSubmit').addEventListener('click', async ()=>{
+  const workDays = rowState.filter(r => !r.holiday);
+  const unfilled = workDays.filter(r => !r.filled || !r.pid);
+  if(unfilled.length > 0){
+    if(!confirm(`⚠️ Perhatian: Masih ada ${unfilled.length} hari kerja yang belum diisi Project ID / Aktivitas.\n\nTetap ingin submit timesheet ini ke Project Manager?`)){
+      return;
+    }
+  }
   const btn = document.getElementById('btnSubmit');
   if(btn.classList.contains('btn-loading')) return;
   btn.classList.add('btn-loading');
