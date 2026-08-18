@@ -437,7 +437,7 @@ html,body{overflow-x:hidden;max-width:100%;}
       </div>
       <div class="flex items-center gap-3">
         <div id="topbarPeriodChip" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium" style="background:#F4F6FB;border:1px solid var(--border);cursor:pointer;" title="Klik untuk ganti periode timesheet"><i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i><span id="topbarPeriodLabel">-</span><i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i></div>
-        <button id="btnConnectSheet" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold" style="background:#FEF2E3;color:#92680B;border:1px solid #F5E6A8;" title="Status koneksi Google Sheets"><i data-lucide="plug-zap" class="w-3.5 h-3.5"></i><span id="connStatus">Sambungkan</span></button>
+        <div id="btnConnectSheet" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold" style="background:#F0FDF4;color:#166534;border:1px solid #BBF7D0;" title="Terhubung ke Database Cloud"><span style="width:6px;height:6px;border-radius:50%;background:#22C55E;box-shadow:0 0 6px rgba(34,197,94,0.6);"></span><span id="connStatus">Cloud Online</span></div>
         <div class="dd-wrap">
           <button id="userMenuTrigger" class="flex items-center gap-2" style="background:none;border:none;cursor:pointer;padding:2px;">
             <img id="userAvatar2" src="https://api.dicebear.com/7.x/initials/svg?seed=User&amp;backgroundType=solid" class="w-8 h-8 rounded-full"/>
@@ -1255,13 +1255,59 @@ async function handleSupabaseRequest(url, options) {
         break;
       }
       case 'getMySubmissionStatus': {
-        const { data } = await supabaseClient.from('submissions')
-          .select('status')
-          .ilike('consultant', params.consultant || '%')
-          .eq('period_start', CURRENT_PERIOD.start)
-          .eq('period_end', CURRENT_PERIOD.end)
-          .maybeSingle();
-        result = { status: data ? data.status : null };
+        const pStart = params.periodStart || CURRENT_PERIOD.start;
+        const pEnd   = params.periodEnd   || CURRENT_PERIOD.end;
+        let q = supabaseClient.from('submissions')
+          .select('*')
+          .ilike('consultant', params.consultant || '%');
+        
+        if (pStart && pEnd) {
+          q = q.eq('period_start', pStart).eq('period_end', pEnd);
+        }
+        let { data } = await q.order('submitted_at', { ascending: false }).limit(1).maybeSingle();
+
+        // Fallback: jika belum ada submission di periode spesifik ini, cari submission terbaru
+        if (!data) {
+          const { data: latest } = await supabaseClient.from('submissions')
+            .select('*')
+            .ilike('consultant', params.consultant || '%')
+            .order('submitted_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          data = latest;
+        }
+
+        if (data) {
+          const normStatus = data.status === 'PM_Approved' ? 'Approved_PM' : (data.status === 'DeptHead_Approved' ? 'Approved_DeptHead' : data.status);
+          result = {
+            status: normStatus,
+            submission: {
+              SubmissionID: data.submission_id,
+              Consultant: data.consultant,
+              Project: data.project,
+              PeriodStart: data.period_start,
+              PeriodEnd: data.period_end,
+              Status: normStatus,
+              SubmittedAt: data.submitted_at,
+              Consultant_Signature: data.consultant_signature,
+              PM_Name: data.pm_name,
+              PM_Timestamp: data.pm_timestamp,
+              PM_Signature: data.pm_signature,
+              DeptHead_Name: data.depthead_name,
+              DeptHead_Timestamp: data.depthead_timestamp,
+              DeptHead_Signature: data.depthead_signature,
+              DivHead_Name: data.divhead_name,
+              DivHead_Timestamp: data.divhead_timestamp,
+              DivHead_Signature: data.divhead_signature,
+              RevisionCount: data.revision_count,
+              LastRevisedAt: data.last_revised_at,
+              LastRevisionReason: data.last_revision_reason,
+              ApprovalHistory: typeof data.approval_history === 'string' ? JSON.parse(data.approval_history) : (data.approval_history || [])
+            }
+          };
+        } else {
+          result = { status: null, submission: null };
+        }
         break;
       }
       case 'deleteTimesheet': {
@@ -2097,13 +2143,64 @@ const APPROVAL_STATUS_LABEL = {
   Approved: 'Disetujui',
   Rejected: 'Ditolak',
 };
+
+function updateSubmitButtonState(){
+  const btnSubmit = document.getElementById('btnSubmit');
+  const btnDraft = document.getElementById('btnSimpanDraft');
+  if(!btnSubmit) return;
+
+  const sub = MY_LATEST_SUBMISSION;
+  const status = sub ? sub.Status : 'Draft';
+
+  if(status === 'Approved'){
+    btnSubmit.className = 'btn';
+    btnSubmit.style.cssText = 'background:#E7F9EE;color:#15803D;border:1px solid #BBF0CE;cursor:default;font-weight:700;padding:8px 14px;';
+    btnSubmit.innerHTML = '<i data-lucide="check-circle-2" class="w-4 h-4 text-green-600"></i>Timesheet Approved';
+    btnSubmit.disabled = true;
+    if(btnDraft){
+      btnDraft.disabled = true;
+      btnDraft.title = 'Timesheet periode ini telah disetujui (read-only)';
+    }
+  } else if(status === 'Submitted' || status === 'Approved_PM' || status === 'Approved_DeptHead'){
+    const waitingLabel = status === 'Submitted' ? 'Menunggu Review PM' : (status === 'Approved_PM' ? 'Menunggu Dept Head' : 'Menunggu Div Head');
+    btnSubmit.className = 'btn';
+    btnSubmit.style.cssText = 'background:#FEF2E3;color:#92680B;border:1px solid #F5E6A8;cursor:default;font-weight:700;padding:8px 14px;';
+    btnSubmit.innerHTML = `<i data-lucide="clock" class="w-4 h-4 text-amber-600"></i>${waitingLabel}`;
+    btnSubmit.disabled = true;
+    if(btnDraft){
+      btnDraft.disabled = true;
+      btnDraft.title = 'Timesheet sedang dalam proses approval';
+    }
+  } else if(status === 'Rejected'){
+    btnSubmit.className = 'btn btn-red';
+    btnSubmit.style.cssText = 'padding:8px 14px;';
+    btnSubmit.innerHTML = '<i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Ajukan Ulang Revisi';
+    btnSubmit.disabled = false;
+    if(btnDraft){
+      btnDraft.disabled = false;
+      btnDraft.title = '';
+    }
+  } else {
+    btnSubmit.className = 'btn btn-green';
+    btnSubmit.style.cssText = 'padding:8px 14px;';
+    btnSubmit.innerHTML = '<i data-lucide="send" class="w-3.5 h-3.5"></i>Submit ke Project Manager';
+    btnSubmit.disabled = false;
+    if(btnDraft){
+      btnDraft.disabled = false;
+      btnDraft.title = '';
+    }
+  }
+  lucide.createIcons();
+}
+
 function loadMySubmissionStatus(){
   if(!APPS_SCRIPT_URL || !CONSULTANT_NAME) return;
-  fetch(`${APPS_SCRIPT_URL}?action=getMySubmissionStatus&consultant=${encodeURIComponent(CONSULTANT_NAME)}`)
+  fetch(`${APPS_SCRIPT_URL}?action=getMySubmissionStatus&consultant=${encodeURIComponent(CONSULTANT_NAME)}&periodStart=${encodeURIComponent(CURRENT_PERIOD.start)}&periodEnd=${encodeURIComponent(CURRENT_PERIOD.end)}`)
     .then(r=>r.json())
     .then(d=>{
-      MY_LATEST_SUBMISSION = d && d.status ? d.status : null;
+      MY_LATEST_SUBMISSION = d && (d.submission || (d.status ? { Status: d.status, PeriodStart: CURRENT_PERIOD.start, PeriodEnd: CURRENT_PERIOD.end } : null)) || null;
       renderMySubmissionStatus();
+      updateSubmitButtonState();
       render(); // supaya badge lock di baris timesheet ikut ke-refresh
     })
     .catch(()=>{});
@@ -2564,8 +2661,8 @@ function render(){
         <td data-label="Project Name" style="font-size:11.5px;${rowBg}">${p.name&&p.name!=='-'?p.name:'<span class="text-slate-300">-</span>'}</td>
         <td data-label="Phase" style="font-size:11.5px;${rowBg}">${p.phase&&p.phase!=='-'?p.phase:'<span class="text-slate-300">-</span>'}</td>
         <td data-label="Customer" style="font-size:11.5px;${rowBg}">${p.customer&&p.customer!=='-'?p.customer:'<span class="text-slate-300">-</span>'}</td>
-        <td data-label="Aktivitas" style="${rowBg}">
-          <input class="act-input" data-idx="${idx}" value="${r.activity||''}" placeholder="Ketik atau pilih aktivitas..." autocomplete="off" ${dis}>
+        <td data-label="Aktivitas" style="${rowBg};min-width:220px;">
+          <textarea class="act-input" data-idx="${idx}" placeholder="Ketik atau pilih aktivitas..." autocomplete="off" ${dis} rows="1" style="width:100%;min-height:34px;padding:6px 8px;font-size:12px;line-height:1.45;border:1.5px solid var(--border);border-radius:8px;resize:vertical;font-family:inherit;box-sizing:border-box;white-space:pre-wrap;word-break:break-word;display:block;">${r.activity||''}</textarea>
           ${r.aiSuggest?`<div style="margin-top:4px;background:#FEF9E7;border:1px solid #F5E6A8;border-radius:6px;padding:5px 8px;font-size:10.5px;color:#8A6A16;display:flex;align-items:center;justify-content:space-between;gap:6px;"><span>Gunakan aktivitas kemarin?</span><button class="aiYesBtn" data-idx="${idx}" style="background:#F59E0B;color:#fff;border-radius:5px;padding:2px 8px;font-weight:700;">Ya</button></div>`:''}
         </td>
         <td data-label="Lokasi" style="${rowBg}"><input class="loc-input" data-idx="${idx}" value="${r.location||''}" placeholder="Pilih lokasi..." autocomplete="off" ${dis}></td>
@@ -2600,9 +2697,13 @@ function attachHandlers(){
       inp.addEventListener('touchstart', e=>{ setTimeout(()=>showFn(e.target, +e.target.dataset.idx), 100); }, {passive:true});
       inp.addEventListener('input', e=>{
         if(stateProp) rowState[+e.target.dataset.idx][stateProp] = e.target.value;
+        if(e.target.tagName && e.target.tagName.toLowerCase() === 'textarea') {
+          e.target.style.height = 'auto';
+          e.target.style.height = Math.max(34, e.target.scrollHeight) + 'px';
+        }
         showFn(e.target, +e.target.dataset.idx);
       });
-      if(stateProp==='location'||stateProp==='hours'){
+      if(stateProp==='location'||stateProp==='hours'||stateProp==='activity'){
         inp.addEventListener('change', e=>{ rowState[+e.target.dataset.idx][stateProp] = e.target.value; });
       }
     });
@@ -2993,12 +3094,12 @@ async function saveToSheets(status){
         periodEnd: CURRENT_PERIOD.end,
       })}).catch(()=>{});
     }
-    showToast(status==='Draft'?'Draft tersimpan ke Google Sheets ✅':'Timesheet berhasil di-submit ke Project Manager ✅','ok');
+    showToast(status==='Draft'?'Draft timesheet berhasil disimpan ✅':'Timesheet berhasil diajukan ke Project Manager ✅','ok');
     rowState.forEach(r => { if(r.filled) r.status = status; });
     render();
     loadMySubmissionStatus();
   }catch(err){
-    console.error(err); showToast('Gagal menyimpan ke Google Sheets.','err');
+    console.error(err); showToast('Gagal menyimpan timesheet. Silakan coba lagi.','err');
   }
 }
 
