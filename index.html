@@ -81,7 +81,7 @@ table.master-tbl tr:hover td{background:#F8FAFF;}
 
 /* ── LOGIN PAGE ── */
 #loginPage{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#0E1730 0%,#1a2a5e 100%);display:flex;align-items:center;justify-content:center;}
-#loginPage.hidden{display:none;}
+#loginPage.hidden{display:none !important;}
 .login-box{background:#fff;border-radius:20px;padding:36px 32px;width:380px;max-width:94vw;box-shadow:0 32px 80px rgba(14,23,48,.4);}
 .login-field{margin-bottom:16px;}
 .login-field label{display:block;font-size:12px;font-weight:600;color:#5A6479;margin-bottom:6px;}
@@ -1677,9 +1677,12 @@ const APPROVER_LABELS = { approver_pm:'Approver - Project Manager', approver_dep
 function initSession(user){
   CURRENT_USER    = user;
   CONSULTANT_NAME = user.fullname;
-  document.getElementById('loginPage').classList.add('hidden');
-  document.getElementById('sidebar').classList.remove('pre-login-hidden');
-  document.getElementById('appMain').classList.remove('pre-login-hidden');
+  const loginPage = document.getElementById('loginPage');
+  if(loginPage){ loginPage.classList.add('hidden'); loginPage.style.display = 'none'; }
+  const sidebar = document.getElementById('sidebar');
+  if(sidebar){ sidebar.classList.remove('pre-login-hidden'); sidebar.style.display = ''; }
+  const appMain = document.getElementById('appMain');
+  if(appMain){ appMain.classList.remove('pre-login-hidden'); appMain.style.display = ''; }
   document.getElementById('sidebarName').textContent  = user.fullname;
   document.getElementById('userAvatar').src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.fullname)}&backgroundType=solid`;
   document.getElementById('topbarUserName').textContent = user.fullname;
@@ -4175,39 +4178,27 @@ function checkHashRoute() {
   const hash = window.location.hash;
   const loginPage = document.getElementById('loginPage');
   const publicView = document.getElementById('publicMasterView');
-  const mainWrap = document.querySelector('.flex.min-h-screen');
+  const sidebar = document.getElementById('sidebar');
+  const appMain = document.getElementById('appMain');
 
   if (hash === '#master-project' || hash === '#master-data') {
     // Sembunyikan halaman login & main dashboard
-    if (loginPage) loginPage.style.display = 'none';
-    if (mainWrap) {
-      // Sembunyikan element aside & main
-      const asideEl = mainWrap.querySelector('aside');
-      const mainEl = mainWrap.querySelector('main');
-      if (asideEl) asideEl.style.display = 'none';
-      if (mainEl) mainEl.style.display = 'none';
-    }
-    publicView.style.display = 'block';
+    if (loginPage) { loginPage.classList.add('hidden'); loginPage.style.display = 'none'; }
+    if (sidebar) sidebar.style.display = 'none';
+    if (appMain) appMain.style.display = 'none';
+    if (publicView) publicView.style.display = 'block';
     loadPublicMasterData();
   } else {
     // Kembalikan ke mode normal
-    publicView.style.display = 'none';
+    if (publicView) publicView.style.display = 'none';
     if (!CURRENT_USER) {
-      if (loginPage) loginPage.style.display = 'flex';
-      if (mainWrap) {
-        const asideEl = mainWrap.querySelector('aside');
-        const mainEl = mainWrap.querySelector('main');
-        if (asideEl) asideEl.style.display = 'none';
-        if (mainEl) mainEl.style.display = 'none';
-      }
+      if (loginPage) { loginPage.classList.remove('hidden'); loginPage.style.display = 'flex'; }
+      if (sidebar) { sidebar.classList.add('pre-login-hidden'); }
+      if (appMain) { appMain.classList.add('pre-login-hidden'); }
     } else {
-      if (loginPage) loginPage.style.display = 'none';
-      if (mainWrap) {
-        const asideEl = mainWrap.querySelector('aside');
-        const mainEl = mainWrap.querySelector('main');
-        if (asideEl) asideEl.style.display = '';
-        if (mainEl) mainEl.style.display = '';
-      }
+      if (loginPage) { loginPage.classList.add('hidden'); loginPage.style.display = 'none'; }
+      if (sidebar) { sidebar.classList.remove('pre-login-hidden'); sidebar.style.display = ''; }
+      if (appMain) { appMain.classList.remove('pre-login-hidden'); appMain.style.display = ''; }
     }
   }
 }
