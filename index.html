@@ -270,46 +270,64 @@ html,body{overflow-x:hidden;max-width:100%;}
 </div>
 
 <!-- ============ PUBLIC STANDALONE MASTER PROJECT VIEW ============ -->
-<div id="publicMasterView" style="display:none; width:100%; min-height:100vh; background:#F8FAFC; padding:16px; box-sizing:border-box;">
-  <div style="max-width:1200px; margin:0 auto; background:#fff; border-radius:16px; border:1px solid #E2E8F0; box-shadow:0 10px 30px rgba(14,23,48,0.05); padding:16px;" class="md:p-6">
-    <!-- Header -->
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; border-bottom:1px solid #F1F5F9; padding-bottom:16px; margin-bottom:16px;">
-      <div style="display:flex; align-items:center; gap:12px;">
-        <img src="logo.png" alt="Logo Integra" style="width:38px;height:38px;object-fit:contain;border-radius:8px;">
-        <div>
-          <div style="font-weight:800; font-size:16px; color:#0E1730; line-height:1.2;" class="md:text-lg">PT INTEGRA SOLUSI MANDIRI</div>
-          <div style="font-size:10px; color:#64748B; font-weight:600; letter-spacing:0.02em;" class="md:text-xs">MASTER DATA PROJECT &amp; SITE ID (PUBLIC VIEW)</div>
+<div id="publicMasterView" style="display:none; position:fixed; inset:0; z-index:99999; background:#F8FAFC; overflow-y:auto; -webkit-overflow-scrolling:touch; box-sizing:border-box;">
+  
+  <!-- Mobile & Desktop Sticky Header -->
+  <header style="position:sticky; top:0; z-index:30; background:rgba(255,255,255,0.96); backdrop-filter:blur(8px); border-bottom:1px solid #E2E8F0; padding:12px 16px;">
+    <div style="max-width:1200px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; gap:12px;">
+      <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+        <img src="logo.png" alt="Logo Integra" style="width:34px;height:34px;object-fit:contain;border-radius:8px;flex-shrink:0;">
+        <div style="min-width:0;">
+          <div style="font-weight:800; font-size:14px; color:#0E1730; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" class="sm:text-base">PT INTEGRA SOLUSI MANDIRI</div>
+          <div style="font-size:10px; color:#2563EB; font-weight:700; letter-spacing:0.03em;">MASTER DATA PROJECT (PUBLIC)</div>
         </div>
       </div>
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; width:100%; justify-content:space-between;" class="md:w-auto md:justify-end">
-        <div id="publicMasterLoading" style="display:none; align-items:center; gap:6px; font-size:12px; color:#2563EB; font-weight:600;">
-          <div style="width:14px; height:14px; border:2px solid #DCE8FF; border-top-color:#2563EB; border-radius:50%; animation:spin .7s linear infinite;"></div>
-          Memuat...
+      <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+        <div id="publicMasterLoading" style="display:none; align-items:center; gap:5px; font-size:11px; color:#2563EB; font-weight:600;">
+          <div style="width:12px; height:12px; border:2px solid #DCE8FF; border-top-color:#2563EB; border-radius:50%; animation:spin .7s linear infinite;"></div>
+          <span class="hidden sm:inline">Memuat...</span>
         </div>
-        <a href="#" class="btn btn-outline text-xs" style="height:34px; display:inline-flex; align-items:center; gap:6px; padding:0 12px;"><i data-lucide="log-in" class="w-3.5 h-3.5"></i>Login</a>
+        <a href="#" class="btn btn-outline text-[11.5px]" style="height:32px; display:inline-flex; align-items:center; gap:5px; padding:0 10px; border-radius:8px;"><i data-lucide="log-in" class="w-3.5 h-3.5"></i>Login App</a>
       </div>
     </div>
+  </header>
 
-    <!-- Search Controls -->
-    <div class="grid grid-cols-1 sm:grid-cols-[1fr_200px_auto] gap-3 mb-4">
-      <div class="relative">
+  <!-- Main Container -->
+  <div style="max-width:1200px; margin:0 auto; padding:14px 12px 40px;" class="sm:p-6">
+    
+    <!-- Filter & Search Toolbar Card -->
+    <div style="background:#fff; border-radius:14px; border:1px solid #E2E8F0; padding:14px; margin-bottom:14px; box-shadow:0 4px 16px rgba(14,23,48,0.03);">
+      
+      <!-- Search Input with Clear Button -->
+      <div class="relative mb-3">
         <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
-        <input id="publicMasterSearch" placeholder="Cari Project, Site ID, atau Customer..." style="padding-left:36px; width:100%; border:1px solid #CBD5E1; border-radius:8px; height:38px; font-size:13px; box-sizing:border-box;" autocomplete="off">
+        <input id="publicMasterSearch" placeholder="Ketik Project ID, Site ID, Nama, atau Customer..." style="padding-left:36px; padding-right:32px; width:100%; border:1.5px solid #CBD5E1; border-radius:10px; height:42px; font-size:13.5px; box-sizing:border-box; outline:none; transition:border-color .15s;" autocomplete="off">
+        <button id="btnPublicMasterClearSearch" style="display:none; position:absolute; right:10px; top:1/2; transform:translateY(-50%); background:#E2E8F0; border:none; border-radius:50%; width:20px; height:20px; font-size:11px; cursor:pointer; color:#475569; align-items:center; justify-content:center;">✕</button>
       </div>
-      <select id="publicMasterFilterCustomer" style="border:1px solid #CBD5E1; border-radius:8px; height:38px; font-size:13px; padding:0 8px; width:100%; box-sizing:border-box;">
-        <option value="">Semua Customer</option>
-      </select>
-      <button id="btnPublicMasterRefresh" class="btn btn-outline w-full sm:w-auto" style="height:38px; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:13px;"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Refresh Data</button>
+
+      <!-- Filters Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2.5">
+        <div class="flex gap-1.5 overflow-x-auto pb-1" style="-webkit-overflow-scrolling:touch;">
+          <button class="btn btn-blue text-[12px] whitespace-nowrap" id="btnPublicTabProject" style="padding:6px 12px; border-radius:8px;">Semua Project</button>
+          <button class="btn btn-outline text-[12px] whitespace-nowrap" id="btnPublicTabSite" style="padding:6px 12px; border-radius:8px;">Dengan Site ID</button>
+        </div>
+        <div class="flex gap-2">
+          <select id="publicMasterFilterCustomer" style="border:1.5px solid #CBD5E1; border-radius:8px; height:34px; font-size:12px; padding:0 8px; flex:1; max-width:220px; box-sizing:border-box;">
+            <option value="">Semua Customer</option>
+          </select>
+          <button id="btnPublicMasterRefresh" class="btn btn-outline" style="height:34px; padding:0 10px; font-size:12px; display:inline-flex; align-items:center; gap:5px; border-radius:8px;" title="Muat Ulang Data"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">Refresh</span></button>
+        </div>
+      </div>
+
+      <!-- Result Counter -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px solid #F1F5F9; font-size:11.5px; color:#64748B;">
+        <span id="publicMasterCount" style="font-weight:600;">0 project ditemukan</span>
+        <span class="text-[11px] text-slate-400">Tap kartu/ID untuk menyalin</span>
+      </div>
     </div>
 
-    <!-- Tab Filter: Project ID vs Site ID -->
-    <div class="flex gap-1.5 mb-4">
-      <button class="btn btn-blue text-[12px]" id="btnPublicTabProject" style="padding:6px 14px;">Project ID</button>
-      <button class="btn btn-outline text-[12px]" id="btnPublicTabSite" style="padding:6px 14px;">Site ID</button>
-    </div>
-
-    <!-- Master Table Wrap (Desktop Only) -->
-    <div class="hidden md:block overflow-x-auto border border-slate-200 rounded-xl">
+    <!-- Desktop Table View (md and above) -->
+    <div class="hidden md:block overflow-x-auto bg-white border border-slate-200 rounded-xl shadow-xs">
       <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
         <thead>
           <tr style="background:#F8FAFC; border-bottom:1px solid #E2E8F0; color:#475569; font-weight:700;">
@@ -328,19 +346,26 @@ html,body{overflow-x:hidden;max-width:100%;}
       </table>
     </div>
 
-    <!-- Mobile Stacked Card View (Mobile Only) -->
-    <div class="block md:hidden space-y-3" id="publicMasterCards">
-      <!-- Cards rendered here by JS -->
+    <!-- Mobile Stacked Card View (Mobile only) -->
+    <div class="block md:hidden space-y-2.5" id="publicMasterCards">
+      <!-- Cards rendered dynamically by JS -->
     </div>
 
-    <div id="publicMasterEmpty" style="display:none; text-align:center; padding:40px; color:#94A3B8; font-size:14px;">
-      Tidak ada master data project yang cocok dengan pencarian Anda.
+    <!-- Load More Button for Mobile (Pagination) -->
+    <div id="publicMasterLoadMoreWrap" style="display:none; text-align:center; margin-top:16px;">
+      <button id="btnPublicMasterLoadMore" class="btn btn-outline w-full sm:w-auto" style="height:38px; padding:0 24px; font-size:12.5px; border-radius:10px; font-weight:600;">Tampilkan Lebih Banyak...</button>
+    </div>
+
+    <!-- Empty State -->
+    <div id="publicMasterEmpty" style="display:none; text-align:center; padding:40px 16px; background:#fff; border-radius:14px; border:1px solid #E2E8F0; color:#94A3B8; font-size:13.5px;">
+      <div style="font-size:28px; margin-bottom:8px;">🔍</div>
+      <div style="font-weight:600; color:#334155;">Tidak ada data yang cocok</div>
+      <div style="font-size:12px; margin-top:4px;">Coba gunakan kata kunci pencarian yang lain atau ubah filter customer.</div>
     </div>
 
     <!-- Footer -->
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; font-size:12px; color:#64748B;">
-      <span id="publicMasterCount">0 project ditemukan</span>
-      <span>© PT Integra Solusi Mandiri · v1.3.0</span>
+    <div style="text-align:center; margin-top:24px; font-size:11px; color:#94A3B8;">
+      PT Integra Solusi Mandiri · Sistem Informasi Manajemen Timesheet
     </div>
   </div>
 </div>
@@ -4270,19 +4295,52 @@ async function loadPublicMasterData(forceRefresh = false) {
   }
 }
 
-function renderPublicMasterTable() {
-  const q = document.getElementById('publicMasterSearch').value.trim().toLowerCase();
-  const custFilter = document.getElementById('publicMasterFilterCustomer').value;
+let publicMasterLimit = 40;
+
+function copyPublicText(text, btnEl, originalHtml) {
+  if (!navigator.clipboard) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  } else {
+    navigator.clipboard.writeText(text).catch(() => {});
+  }
+  
+  if (btnEl) {
+    btnEl.innerHTML = '✓ Tersalin';
+    btnEl.style.color = '#15803D';
+    btnEl.style.borderColor = '#86EFAC';
+    btnEl.style.backgroundColor = '#DCFCE7';
+    setTimeout(() => {
+      btnEl.innerHTML = originalHtml;
+      btnEl.style.color = '';
+      btnEl.style.borderColor = '';
+      btnEl.style.backgroundColor = '';
+    }, 1500);
+  }
+}
+
+function renderPublicMasterTable(resetLimit = true) {
+  if (resetLimit) publicMasterLimit = 40;
+
+  const searchInput = document.getElementById('publicMasterSearch');
+  const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  const custFilter = document.getElementById('publicMasterFilterCustomer') ? document.getElementById('publicMasterFilterCustomer').value : '';
+  const clearBtn = document.getElementById('btnPublicMasterClearSearch');
+  if (clearBtn) clearBtn.style.display = q ? 'flex' : 'none';
 
   // Populate customer filter dropdown
   const customers = [...new Set(Object.values(PROJECTS).map(p => p.customer || ''))].filter(Boolean);
   const custSel = document.getElementById('publicMasterFilterCustomer');
-  if (custSel) {
+  if (custSel && custSel.options.length <= 1) {
     const curCust = custSel.value;
     custSel.innerHTML = '<option value="">Semua Customer</option>' + customers.map(c => `<option value="${c}" ${c === curCust ? 'selected' : ''}>${c}</option>`).join('');
   }
 
-  const keys = Object.keys(PROJECTS).filter(k => {
+  const allFilteredKeys = Object.keys(PROJECTS).filter(k => {
     const p = PROJECTS[k];
     const siteId = p.siteId || '';
     const matchQ = !q || k.toLowerCase().includes(q) || siteId.toLowerCase().includes(q) || (p.name || '').toLowerCase().includes(q) || (p.customer || '').toLowerCase().includes(q);
@@ -4293,89 +4351,157 @@ function renderPublicMasterTable() {
 
   const tbody = document.getElementById('publicMasterTBody');
   const cardsContainer = document.getElementById('publicMasterCards');
-  if (!tbody) return;
-  
-  tbody.innerHTML = '';
-  if (cardsContainer) cardsContainer.innerHTML = '';
-
   const emptyEl = document.getElementById('publicMasterEmpty');
-  document.getElementById('publicMasterCount').textContent = `${keys.length} project ditemukan`;
+  const loadMoreWrap = document.getElementById('publicMasterLoadMoreWrap');
+  const loadMoreBtn = document.getElementById('btnPublicMasterLoadMore');
 
-  if (!keys.length) {
+  const countEl = document.getElementById('publicMasterCount');
+  if (countEl) countEl.textContent = `${allFilteredKeys.length} project ditemukan`;
+
+  if (!allFilteredKeys.length) {
+    if (tbody) tbody.innerHTML = '';
+    if (cardsContainer) cardsContainer.innerHTML = '';
     if (emptyEl) emptyEl.style.display = 'block';
+    if (loadMoreWrap) loadMoreWrap.style.display = 'none';
     return;
   }
   if (emptyEl) emptyEl.style.display = 'none';
 
-  keys.forEach(k => {
-    const p = PROJECTS[k];
-    const siteId = p.siteId || '';
-    const baseId = p.projectId || k.split(' - ')[0];
+  const visibleKeys = allFilteredKeys.slice(0, publicMasterLimit);
 
-    // 1. Render Table Row (Desktop)
-    const tr = document.createElement('tr');
-    tr.style.borderBottom = '1px solid #F1F5F9';
-    tr.innerHTML = `
-      <td style="padding:12px 16px; font-weight:600; color:#0E1730;">${baseId}</td>
-      <td style="padding:12px 16px; font-family:monospace; font-size:12px; color:#6D28D9; font-weight:700;">${siteId || '-'}</td>
-      <td style="padding:12px 16px; color:#334155;">${p.name || '-'}</td>
-      <td style="padding:12px 16px;"><span style="background:#EDF0F6; border-radius:5px; padding:2px 7px; font-size:11px; font-weight:500; color:#475569;">${p.phase || '-'}</span></td>
-      <td style="padding:12px 16px; color:#334155;">${p.customer || '-'}</td>
-    `;
-    tbody.appendChild(tr);
+  // 1. Render Desktop Table
+  if (tbody) {
+    tbody.innerHTML = visibleKeys.map(k => {
+      const p = PROJECTS[k];
+      const siteId = p.siteId || '';
+      const baseId = p.projectId || k.split(' - ')[0];
+      return `
+        <tr style="border-bottom:1px solid #F1F5F9; transition:background .15s;" class="hover:bg-slate-50">
+          <td style="padding:11px 16px; font-weight:700; color:#0E1730;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span>${baseId}</span>
+              <button onclick="copyPublicText('${baseId}', this, '<i data-lucide=\\'copy\\' class=\\'w-3 h-3\\'></i>')" style="background:#F1F5F9; border:1px solid #E2E8F0; border-radius:5px; padding:2px 6px; font-size:10px; cursor:pointer; color:#475569;" title="Salin Project ID"><i data-lucide="copy" class="w-3 h-3"></i></button>
+            </div>
+          </td>
+          <td style="padding:11px 16px;">
+            ${siteId ? `
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-family:monospace; font-size:12px; color:#6D28D9; font-weight:700; background:#F5F3FF; padding:2px 6px; border-radius:5px;">${siteId}</span>
+                <button onclick="copyPublicText('${siteId}', this, '<i data-lucide=\\'copy\\' class=\\'w-3 h-3\\'></i>')" style="background:#F1F5F9; border:1px solid #E2E8F0; border-radius:5px; padding:2px 6px; font-size:10px; cursor:pointer; color:#475569;" title="Salin Site ID"><i data-lucide="copy" class="w-3 h-3"></i></button>
+              </div>
+            ` : '<span style="color:#94A3B8;">-</span>'}
+          </td>
+          <td style="padding:11px 16px; color:#334155; font-weight:500;">${p.name || '-'}</td>
+          <td style="padding:11px 16px;"><span style="background:#EDF0F6; border-radius:6px; padding:3px 8px; font-size:11px; font-weight:600; color:#475569;">${p.phase || '-'}</span></td>
+          <td style="padding:11px 16px; color:#334155; font-weight:600;">${p.customer || '-'}</td>
+        </tr>
+      `;
+    }).join('');
+  }
 
-    // 2. Render Mobile Card (Mobile)
-    if (cardsContainer) {
-      const card = document.createElement('div');
-      card.className = "bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-2.5";
-      card.innerHTML = `
-        <div class="flex justify-between items-start">
-          <div>
-            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Project ID</div>
-            <div class="text-[14px] font-bold text-slate-900">${baseId}</div>
+  // 2. Render Mobile Cards
+  if (cardsContainer) {
+    cardsContainer.innerHTML = visibleKeys.map(k => {
+      const p = PROJECTS[k];
+      const siteId = p.siteId || '';
+      const baseId = p.projectId || k.split(' - ')[0];
+      return `
+        <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:12px 14px; box-shadow:0 2px 6px rgba(14,23,48,0.02); display:flex; flex-direction:column; gap:8px;">
+          <!-- Top Row: IDs & Copy Action -->
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+            <div>
+              <div style="font-size:9.5px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.04em;">Project ID</div>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
+                <span style="font-size:14px; font-weight:800; color:#0E1730; font-family:monospace;">${baseId}</span>
+                <button onclick="copyPublicText('${baseId}', this, '<i data-lucide=\\'copy\\' class=\\'w-3 h-3\\'></i>')" style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:5px; padding:2px 6px; font-size:10px; cursor:pointer; color:#1D4ED8; display:inline-flex; align-items:center; gap:3px;">
+                  <i data-lucide="copy" class="w-3 h-3"></i>
+                </button>
+              </div>
+            </div>
+            ${siteId ? `
+              <div style="text-align:right;">
+                <div style="font-size:9.5px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.04em;">Site ID</div>
+                <div style="display:flex; align-items:center; justify-content:flex-end; gap:5px; margin-top:2px;">
+                  <button onclick="copyPublicText('${siteId}', this, '<i data-lucide=\\'copy\\' class=\\'w-3 h-3\\'></i>')" style="background:#FAF5FF; border:1px solid #E9D5FF; border-radius:5px; padding:2px 6px; font-size:10px; cursor:pointer; color:#7E22CE; display:inline-flex; align-items:center; gap:3px;">
+                    <i data-lucide="copy" class="w-3 h-3"></i>
+                  </button>
+                  <span style="font-size:12px; font-weight:800; color:#6D28D9; font-family:monospace; background:#F5F3FF; padding:2px 7px; border-radius:6px; border:1px solid #DDD6FE;">${siteId}</span>
+                </div>
+              </div>
+            ` : `
+              <div style="text-align:right;">
+                <div style="font-size:9.5px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.04em;">Site ID</div>
+                <span style="font-size:11px; color:#CBD5E1; font-style:italic;">-</span>
+              </div>
+            `}
           </div>
-          <div class="text-right">
-            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Site ID</div>
-            <div class="text-[12px] font-mono font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded mt-0.5 inline-block">${siteId || '-'}</div>
+
+          <!-- Project Name -->
+          <div style="border-top:1px solid #F8FAFC; padding-top:6px;">
+            <div style="font-size:9.5px; font-weight:600; color:#94A3B8;">Project Name</div>
+            <div style="font-size:12.5px; font-weight:700; color:#1E293B; line-height:1.3; margin-top:2px;">${p.name || '-'}</div>
           </div>
-        </div>
-        <div class="border-t border-slate-100 pt-2">
-          <div class="text-[10px] text-slate-400 font-medium">Project Name</div>
-          <div class="text-[13px] text-slate-700 font-semibold mt-0.5">${p.name || '-'}</div>
-        </div>
-        <div class="grid grid-cols-2 gap-2 border-t border-slate-100 pt-2">
-          <div>
-            <div class="text-[10px] text-slate-400 font-medium">Phase</div>
-            <div class="inline-block bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[11px] font-semibold mt-0.5">${p.phase || '-'}</div>
-          </div>
-          <div>
-            <div class="text-[10px] text-slate-400 font-medium">Customer</div>
-            <div class="text-[12px] text-slate-700 font-semibold mt-0.5">${p.customer || '-'}</div>
+
+          <!-- Phase & Customer Pill Badges -->
+          <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #F1F5F9; padding-top:8px; gap:8px;">
+            <div style="display:flex; align-items:center; gap:4px; min-width:0;">
+              <span style="font-size:10px; color:#64748B; font-weight:600;">Cust:</span>
+              <span style="font-size:11px; font-weight:700; color:#2563EB; background:#EFF6FF; padding:2px 8px; border-radius:999px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.customer || '-'}</span>
+            </div>
+            <span style="font-size:10.5px; font-weight:600; color:#475569; background:#F1F5F9; padding:2px 8px; border-radius:6px; flex-shrink:0;">${p.phase || '-'}</span>
           </div>
         </div>
       `;
-      cardsContainer.appendChild(card);
+    }).join('');
+  }
+
+  // Load More button state
+  if (loadMoreWrap) {
+    if (allFilteredKeys.length > publicMasterLimit) {
+      loadMoreWrap.style.display = 'block';
+      if (loadMoreBtn) loadMoreBtn.textContent = `Tampilkan Lebih Banyak (+${Math.min(40, allFilteredKeys.length - publicMasterLimit)} dari sisa ${allFilteredKeys.length - publicMasterLimit})`;
+    } else {
+      loadMoreWrap.style.display = 'none';
     }
-  });
+  }
+
+  lucide.createIcons();
 }
 
 // Search & Filter Listeners
-document.getElementById('publicMasterSearch').addEventListener('input', renderPublicMasterTable);
-document.getElementById('publicMasterFilterCustomer').addEventListener('change', renderPublicMasterTable);
+document.getElementById('publicMasterSearch').addEventListener('input', () => renderPublicMasterTable(true));
+document.getElementById('publicMasterFilterCustomer').addEventListener('change', () => renderPublicMasterTable(true));
 document.getElementById('btnPublicMasterRefresh').addEventListener('click', () => loadPublicMasterData(true));
+
+const clearSearchBtn = document.getElementById('btnPublicMasterClearSearch');
+if (clearSearchBtn) {
+  clearSearchBtn.addEventListener('click', () => {
+    document.getElementById('publicMasterSearch').value = '';
+    renderPublicMasterTable(true);
+    document.getElementById('publicMasterSearch').focus();
+  });
+}
+
+const loadMoreBtn = document.getElementById('btnPublicMasterLoadMore');
+if (loadMoreBtn) {
+  loadMoreBtn.addEventListener('click', () => {
+    publicMasterLimit += 40;
+    renderPublicMasterTable(false);
+  });
+}
 
 // Tab Listeners
 document.getElementById('btnPublicTabProject').addEventListener('click', () => {
   publicMasterTab = 'project';
-  document.getElementById('btnPublicTabProject').className = 'btn btn-blue text-[12px]';
-  document.getElementById('btnPublicTabSite').className = 'btn btn-outline text-[12px]';
-  renderPublicMasterTable();
+  document.getElementById('btnPublicTabProject').className = 'btn btn-blue text-[12px] whitespace-nowrap';
+  document.getElementById('btnPublicTabSite').className = 'btn btn-outline text-[12px] whitespace-nowrap';
+  renderPublicMasterTable(true);
 });
 document.getElementById('btnPublicTabSite').addEventListener('click', () => {
   publicMasterTab = 'site';
-  document.getElementById('btnPublicTabProject').className = 'btn btn-outline text-[12px]';
-  document.getElementById('btnPublicTabSite').className = 'btn btn-blue text-[12px]';
-  renderPublicMasterTable();
+  document.getElementById('btnPublicTabProject').className = 'btn btn-outline text-[12px] whitespace-nowrap';
+  document.getElementById('btnPublicTabSite').className = 'btn btn-blue text-[12px] whitespace-nowrap';
+  renderPublicMasterTable(true);
 });
 
 window.addEventListener('hashchange', checkHashRoute);
