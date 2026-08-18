@@ -261,7 +261,80 @@ html,body{overflow-x:hidden;max-width:100%;}
     <div class="login-field"><label>Password</label><input type="password" id="loginPassword" placeholder="Masukkan password..." autocomplete="current-password"></div>
     <div id="loginError"></div>
     <button class="btn-login" id="btnLogin">Masuk</button>
+    <div style="text-align:center;margin-top:14px;font-size:12.5px;">
+      <a href="#master-project" id="linkPublicMaster" style="color:var(--blue);font-weight:600;text-decoration:none;"><i data-lucide="database" class="w-3.5 h-3.5 inline mr-1 align-middle"></i>Lihat Master Data Project (Freelance)</a>
+    </div>
     <div style="text-align:center;margin-top:16px;font-size:11px;color:#B2BAC9;">© 2026 PT Integra Solusi Mandiri · v1.2.0</div>
+  </div>
+</div>
+
+<!-- ============ PUBLIC STANDALONE MASTER PROJECT VIEW ============ -->
+<div id="publicMasterView" style="display:none; width:100%; min-height:100vh; background:#F8FAFC; padding:24px; box-sizing:border-box;">
+  <div style="max-width:1200px; margin:0 auto; background:#fff; border-radius:16px; border:1px solid #E2E8F0; box-shadow:0 10px 30px rgba(14,23,48,0.05); padding:24px;">
+    <!-- Header -->
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; border-bottom:1px solid #F1F5F9; padding-bottom:20px; margin-bottom:20px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <img src="logo.png" alt="Logo Integra" style="width:40px;height:40px;object-fit:contain;border-radius:8px;">
+        <div>
+          <div style="font-weight:800; font-size:18px; color:#0E1730; line-height:1.2;">PT INTEGRA SOLUSI MANDIRI</div>
+          <div style="font-size:11px; color:#64748B; font-weight:600; letter-spacing:0.02em;">MASTER DATA PROJECT &amp; SITE ID (PUBLIC VIEW)</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <div id="publicMasterLoading" style="display:none; align-items:center; gap:8px; font-size:12.5px; color:#2563EB; font-weight:600;">
+          <div style="width:16px; height:16px; border:2px solid #DCE8FF; border-top-color:#2563EB; border-radius:50%; animation:spin .7s linear infinite;"></div>
+          Memuat data...
+        </div>
+        <a href="#" class="btn btn-outline" style="height:36px; font-size:12px; display:inline-flex; align-items:center; gap:6px;"><i data-lucide="log-in" class="w-3.5 h-3.5"></i>Kembali ke Login</a>
+      </div>
+    </div>
+
+    <!-- Search Controls -->
+    <div style="display:grid; grid-template-columns:1fr 220px auto; gap:12px; margin-bottom:16px;">
+      <div class="relative">
+        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+        <input id="publicMasterSearch" placeholder="Cari Project ID, Site ID, Nama Project, atau Customer..." style="padding-left:36px; width:100%; border:1px solid #CBD5E1; border-radius:8px; height:38px; font-size:13px; box-sizing:border-box;" autocomplete="off">
+      </div>
+      <select id="publicMasterFilterCustomer" style="border:1px solid #CBD5E1; border-radius:8px; height:38px; font-size:13px; padding:0 8px;">
+        <option value="">Semua Customer</option>
+      </select>
+      <button id="btnPublicMasterRefresh" class="btn btn-outline" style="height:38px; display:inline-flex; align-items:center; gap:6px; font-size:13px;"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Refresh Data</button>
+    </div>
+
+    <!-- Tab Filter: Project ID vs Site ID -->
+    <div class="flex gap-1.5 mb-4">
+      <button class="btn btn-blue text-[12px]" id="btnPublicTabProject" style="padding:6px 14px;">Project ID</button>
+      <button class="btn btn-outline text-[12px]" id="btnPublicTabSite" style="padding:6px 14px;">Site ID</button>
+    </div>
+
+    <!-- Master Table Wrap -->
+    <div style="overflow-x:auto; border:1px solid #E2E8F0; border-radius:10px;">
+      <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
+        <thead>
+          <tr style="background:#F8FAFC; border-bottom:1px solid #E2E8F0; color:#475569; font-weight:700;">
+            <th style="padding:12px 16px; border-bottom:1px solid #E2E8F0;">Project ID</th>
+            <th style="padding:12px 16px; border-bottom:1px solid #E2E8F0;">Site ID</th>
+            <th style="padding:12px 16px; border-bottom:1px solid #E2E8F0;">Project Name</th>
+            <th style="padding:12px 16px; border-bottom:1px solid #E2E8F0;">Phase</th>
+            <th style="padding:12px 16px; border-bottom:1px solid #E2E8F0;">Customer</th>
+          </tr>
+        </thead>
+        <tbody id="publicMasterTBody">
+          <tr>
+            <td colspan="5" style="text-align:center; padding:40px; color:#94A3B8;">⏳ Menghubungkan ke Google Sheets...</td>
+          </tr>
+        </tbody>
+      </table>
+      <div id="publicMasterEmpty" style="display:none; text-align:center; padding:40px; color:#94A3B8; font-size:14px;">
+        Tidak ada master data project yang cocok dengan pencarian Anda.
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; font-size:12px; color:#64748B;">
+      <span id="publicMasterCount">0 project ditemukan</span>
+      <span>© PT Integra Solusi Mandiri · v1.2.0</span>
+    </div>
   </div>
 </div>
 
@@ -3575,6 +3648,147 @@ document.getElementById('btnSaveSignature').addEventListener('click', async ()=>
   }catch(e){ errEl.textContent = 'Gagal menyimpan (' + (e.message || 'error tidak diketahui') + '). Coba lagi atau pakai gambar tanda tangan yang lebih sederhana.'; }
   btn.classList.remove('btn-loading'); btn.disabled = false;
 });
+
+// =========================================================
+// STANDALONE PUBLIC MASTER PROJECT ROUTING & VIEW LOGIC
+// =========================================================
+let publicMasterTab = 'project';
+
+function checkHashRoute() {
+  const hash = window.location.hash;
+  const loginPage = document.getElementById('loginPage');
+  const publicView = document.getElementById('publicMasterView');
+  const mainWrap = document.querySelector('.flex.min-h-screen');
+
+  if (hash === '#master-project' || hash === '#master-data') {
+    // Sembunyikan halaman login & main dashboard
+    if (loginPage) loginPage.style.display = 'none';
+    if (mainWrap) {
+      // Sembunyikan element aside & main
+      const asideEl = mainWrap.querySelector('aside');
+      const mainEl = mainWrap.querySelector('main');
+      if (asideEl) asideEl.style.display = 'none';
+      if (mainEl) mainEl.style.display = 'none';
+    }
+    publicView.style.display = 'block';
+    loadPublicMasterData();
+  } else {
+    // Kembalikan ke mode normal
+    publicView.style.display = 'none';
+    if (!CURRENT_USER) {
+      if (loginPage) loginPage.style.display = 'flex';
+      if (mainWrap) {
+        const asideEl = mainWrap.querySelector('aside');
+        const mainEl = mainWrap.querySelector('main');
+        if (asideEl) asideEl.style.display = 'none';
+        if (mainEl) mainEl.style.display = 'none';
+      }
+    } else {
+      if (loginPage) loginPage.style.display = 'none';
+      if (mainWrap) {
+        const asideEl = mainWrap.querySelector('aside');
+        const mainEl = mainWrap.querySelector('main');
+        if (asideEl) asideEl.style.display = '';
+        if (mainEl) mainEl.style.display = '';
+      }
+    }
+  }
+}
+
+async function loadPublicMasterData(forceRefresh = false) {
+  const loadingEl = document.getElementById('publicMasterLoading');
+  if (loadingEl) loadingEl.style.display = 'inline-flex';
+
+  try {
+    if (Object.keys(PROJECTS).length === 0 || forceRefresh) {
+      const mp = await fetch(`${APPS_SCRIPT_URL}?action=getMasterProject`).then(r => r.json());
+      applyMasterProjectData(mp);
+    }
+    renderPublicMasterTable();
+  } catch (e) {
+    console.error(e);
+    const tbody = document.getElementById('publicMasterTBody');
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:40px; color:#DC2626; font-weight:600;">⚠ Gagal memuat data dari Google Sheets. Coba klik 'Refresh Data' di atas.</td></tr>`;
+    }
+  } finally {
+    if (loadingEl) loadingEl.style.display = 'none';
+  }
+}
+
+function renderPublicMasterTable() {
+  const q = document.getElementById('publicMasterSearch').value.trim().toLowerCase();
+  const custFilter = document.getElementById('publicMasterFilterCustomer').value;
+
+  // Populate customer filter dropdown
+  const customers = [...new Set(Object.values(PROJECTS).map(p => p.customer || ''))].filter(Boolean);
+  const custSel = document.getElementById('publicMasterFilterCustomer');
+  if (custSel) {
+    const curCust = custSel.value;
+    custSel.innerHTML = '<option value="">Semua Customer</option>' + customers.map(c => `<option value="${c}" ${c === curCust ? 'selected' : ''}>${c}</option>`).join('');
+  }
+
+  const keys = Object.keys(PROJECTS).filter(k => {
+    const p = PROJECTS[k];
+    const siteId = p.siteId || '';
+    const matchQ = !q || k.toLowerCase().includes(q) || siteId.toLowerCase().includes(q) || (p.name || '').toLowerCase().includes(q) || (p.customer || '').toLowerCase().includes(q);
+    const matchCust = !custFilter || p.customer === custFilter;
+    if (publicMasterTab === 'site') return matchQ && matchCust && !!siteId;
+    return matchQ && matchCust;
+  });
+
+  const tbody = document.getElementById('publicMasterTBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const emptyEl = document.getElementById('publicMasterEmpty');
+  document.getElementById('publicMasterCount').textContent = `${keys.length} project ditemukan`;
+
+  if (!keys.length) {
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  keys.forEach(k => {
+    const p = PROJECTS[k];
+    const siteId = p.siteId || '';
+    const baseId = p.projectId || k.split(' - ')[0];
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid #F1F5F9';
+    tr.innerHTML = `
+      <td style="padding:12px 16px; font-weight:600; color:#0E1730;">${baseId}</td>
+      <td style="padding:12px 16px; font-family:monospace; font-size:12px; color:#6D28D9; font-weight:700;">${siteId || '-'}</td>
+      <td style="padding:12px 16px; color:#334155;">${p.name || '-'}</td>
+      <td style="padding:12px 16px;"><span style="background:#EDF0F6; border-radius:5px; padding:2px 7px; font-size:11px; font-weight:500; color:#475569;">${p.phase || '-'}</span></td>
+      <td style="padding:12px 16px; color:#334155;">${p.customer || '-'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Search & Filter Listeners
+document.getElementById('publicMasterSearch').addEventListener('input', renderPublicMasterTable);
+document.getElementById('publicMasterFilterCustomer').addEventListener('change', renderPublicMasterTable);
+document.getElementById('btnPublicMasterRefresh').addEventListener('click', () => loadPublicMasterData(true));
+
+// Tab Listeners
+document.getElementById('btnPublicTabProject').addEventListener('click', () => {
+  publicMasterTab = 'project';
+  document.getElementById('btnPublicTabProject').className = 'btn btn-blue text-[12px]';
+  document.getElementById('btnPublicTabSite').className = 'btn btn-outline text-[12px]';
+  renderPublicMasterTable();
+});
+document.getElementById('btnPublicTabSite').addEventListener('click', () => {
+  publicMasterTab = 'site';
+  document.getElementById('btnPublicTabProject').className = 'btn btn-outline text-[12px]';
+  document.getElementById('btnPublicTabSite').className = 'btn btn-blue text-[12px]';
+  renderPublicMasterTable();
+});
+
+window.addEventListener('hashchange', checkHashRoute);
+// Jalankan langsung saat page load jika ada hash di URL
+setTimeout(checkHashRoute, 100);
+
 </script>
 </body>
 </html>
